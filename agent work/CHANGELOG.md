@@ -6,6 +6,42 @@ Cross-session handoff log. Newest entry first. Append one entry per completed pa
 
 <!-- New entries go directly below this line, newest first. -->
 
+## Brand Restyle — Apply the Skin (2026-06-28)
+
+| Field | Value |
+|-------|--------|
+| **Agent / pass** | Brand Restyle / Agent 2 |
+| **Agent brief** | `Agent Work/Brand Restyle/Agent2-Apply-Skin.md` |
+| **Status** | `shipped` |
+| **Depends on** | Agent 1 token adoption in `prod/aerodeck-planner.html`, Agent 0 locked decisions |
+| **Unblocks** | — (final Brand Restyle pass) |
+
+### Goal (one sentence)
+Rewrite planner component CSS to the full IFT light brand using Agent 1's tokens, preserving one-viewport / no-scroll / large-touch-target layout.
+
+### Changed
+- **App / engine:** `prod/aerodeck-planner.html` — full component restyle via tokens: verdict band (semantic in/out-of-spec, `--radius-lg`, uppercase caps); pin-toggle pill buttons (accent active, surface inactive); slider cards (`--color-bg`, `--radius-md`, `--shadow-subtle`); accent-coupled speed/front-overlap cluster vs neutral side-overlap; derived readout on light surface with heading-ink values; binding highlight via `--color-binding` pair; brand select/checkbox styling. **18569 bytes** (`wc -c prod/aerodeck-planner.html`). Script block byte-identical to pre-pass — verified by diff.
+
+### Behavior / contract delta
+- **Visual:** white IFT light theme throughout; no dark-theme hex literals remain in component rules (tokens only in `:root`).
+- **Layout:** unchanged — `100dvh` grid, `overflow:hidden`, 44px touch targets, safe-area padding.
+- **Coupling/binding:** speed + front overlap share accent left border; side overlap neutral rule border; `.binding` still targets same DOM nodes via JS.
+
+### Verify
+- Commands run: `diff` pre-pass vs post-pass `<script>` blocks; `wc -c prod/aerodeck-planner.html`; grep component rules for raw hex; id/div counts
+- Result: `pass` (18569 bytes; script diff exit 0; hex only in `:root`; 30 ids, 12 divs unchanged)
+
+### Deferred
+- — (Brand Restyle complete)
+
+### Pitfalls / do not redo
+- Do not edit `<script>` or DOM structure — binding highlight depends on `.parentElement` chain.
+- Do not port chat/rail CSS from `components.css` — planner has no those components.
+- Pin-toggle checked state uses accent fill + `--color-on-accent` text (not dark navy).
+
+### Next agent should
+- Brand Restyle is complete; no further skin passes planned unless palette changes.
+
 ## Brand Restyle — Token Adoption (2026-06-28)
 
 | Field | Value |
