@@ -5,6 +5,60 @@
 <title>AeroDeck Planner</title>
 </head>
 <body>
+<div id="verdict">
+  <span id="verdict-state">—</span>
+  <span id="verdict-pin">—</span>
+</div>
+
+<div id="pin-toggle">
+  <label><input type="radio" name="pinEnd" value="gsd" checked> Pin GSD</label>
+  <label><input type="radio" name="pinEnd" value="altitude"> Pin altitude</label>
+</div>
+
+<div id="sliders">
+  <div id="axis-held">
+    <label id="axis-held-label">GSD (cm/px)</label>
+    <input type="range" id="axis-held-slider" min="0.5" max="10" step="0.1" value="2">
+    <output id="axis-held-out">2.00</output>
+  </div>
+  <div id="axis-derived">
+    <label id="axis-derived-label">Altitude (m)</label>
+    <output id="axis-derived-out">—</output>
+  </div>
+  <div>
+    <label for="speed">Speed (m/s)</label>
+    <input type="range" id="speed" min="1" max="25" step="0.5" value="8">
+    <output id="speed-out">8.0</output>
+  </div>
+  <div id="front-overlap-row">
+    <label for="front-overlap">Front overlap</label>
+    <input type="range" id="front-overlap" min="50" max="95" step="1" value="80">
+    <output id="front-overlap-out">80%</output>
+    <span id="front-overlap-ceiling-wrap">ceiling <output id="front-overlap-ceiling">—</output></span>
+  </div>
+  <div>
+    <label for="side-overlap">Side overlap</label>
+    <input type="range" id="side-overlap" min="50" max="90" step="1" value="70">
+    <output id="side-overlap-out">70%</output>
+  </div>
+</div>
+
+<div id="derived">
+  <div>Blur margin: <output id="blur-margin">—</output> px (<output id="blur-speed-headroom">—</output> m/s headroom)</div>
+  <div id="binding-note"></div>
+</div>
+
+<div id="flags">
+  <label>Sensor
+    <select id="sensor"></select>
+  </label>
+  <label>Light
+    <select id="light"></select>
+  </label>
+  <label><input type="checkbox" id="terrain-dynamic"> Dynamic AGL</label>
+  <span id="terrain-note"></span>
+</div>
+
 <script>
 /*
  * Unit contract (all functions unless noted):
@@ -43,7 +97,16 @@ const SENSORS = {
   }
 };
 
-// GSD (cm/px) = pixelPitch (µm) × altitude (m) / (focalLength (mm) × 10)
+const LIGHT = {
+  overcast: { label: 'Overcast', shutterS: 1 / 500 },
+  bright: { label: 'Bright midday', shutterS: 1 / 2000 },
+  lowAngle: { label: 'Low angle', shutterS: 1 / 400 }
+};
+
+const MAX_BLUR_PX = 1;
+const AXIS_GSD_MIN = 0.5;
+const AXIS_GSD_MAX = 10;
+
 function gsd(altitudeM, sensor) {
   return sensor.pixelPitchUm * altitudeM / (sensor.focalLengthMm * 10);
 }
@@ -52,9 +115,6 @@ function altitudeFromGsd(gsdCmPx, sensor) {
   return gsdCmPx * sensor.focalLengthMm * 10 / sensor.pixelPitchUm;
 }
 
-// Ground footprint from GSD and sensor resolution.
-// Convention: fly with sensor width cross-track (max swath); heightPx is along-track (front overlap).
-// Portrait-oriented profiles would swap which dimension maps to alongTrackM.
 function footprint(gsdCmPx, sensor) {
   const gsdM = gsdCmPx / 100;
   return {
@@ -63,21 +123,208 @@ function footprint(gsdCmPx, sensor) {
   };
 }
 
-// Overlap ceiling at current speed: 1 − (speed / captureRate) / alongTrackFootprint.
-// Returns negative when speed exceeds capture rate at this footprint — intentional out-of-spec signal; UI clamps display.
 function maxFrontOverlapAtSpeed(speedMs, alongTrackFootprintM, captureRateHz) {
   return 1 - speedMs / (alongTrackFootprintM * captureRateHz);
 }
 
-// Speed wall for a target front overlap (inverse of maxFrontOverlapAtSpeed)
 function maxSpeedForFrontOverlap(targetFrontOverlap, alongTrackFootprintM, captureRateHz) {
   return (1 - targetFrontOverlap) * alongTrackFootprintM * captureRateHz;
 }
 
-// Max speed before motion blur exceeds maxBlurPx: blurPx = speed × shutter / GSD(m/px)
 function blurCeiling(gsdCmPx, shutterS, maxBlurPx) {
   return maxBlurPx * (gsdCmPx / 100) / shutterS;
 }
+
+const state = {
+  sensorKey: 'mavic3e',
+  pinEnd: 'gsd',
+  gsdCmPx: 2,
+  altitudeM: 100,
+  speedMs: 8,
+  frontOverlap: 0.8,
+  sideOverlap: 0.7,
+  lightKey: 'overcast',
+  terrainDynamic: false
+};
+
+const el = {
+  verdictState: document.getElementById('verdict-state'),
+  verdictPin: document.getElementById('verdict-pin'),
+  axisHeldLabel: document.getElementById('axis-held-label'),
+  axisHeldSlider: document.getElementById('axis-held-slider'),
+  axisHeldOut: document.getElementById('axis-held-out'),
+  axisDerivedLabel: document.getElementById('axis-derived-label'),
+  axisDerivedOut: document.getElementById('axis-derived-out'),
+  speed: document.getElementById('speed'),
+  speedOut: document.getElementById('speed-out'),
+  frontOverlap: document.getElementById('front-overlap'),
+  frontOverlapOut: document.getElementById('front-overlap-out'),
+  frontOverlapCeiling: document.getElementById('front-overlap-ceiling'),
+  frontOverlapCeilingWrap: document.getElementById('front-overlap-ceiling-wrap'),
+  frontOverlapRow: document.getElementById('front-overlap-row'),
+  sideOverlap: document.getElementById('side-overlap'),
+  sideOverlapOut: document.getElementById('side-overlap-out'),
+  blurMargin: document.getElementById('blur-margin'),
+  blurSpeedHeadroom: document.getElementById('blur-speed-headroom'),
+  bindingNote: document.getElementById('binding-note'),
+  sensor: document.getElementById('sensor'),
+  light: document.getElementById('light'),
+  terrainDynamic: document.getElementById('terrain-dynamic'),
+  terrainNote: document.getElementById('terrain-note')
+};
+
+function pct(v) { return Math.round(v * 100) + '%'; }
+
+function bindAxisSlider() {
+  const sensor = SENSORS[state.sensorKey];
+  const s = el.axisHeldSlider;
+  if (state.pinEnd === 'gsd') {
+    el.axisHeldLabel.textContent = 'GSD (cm/px)';
+    el.axisDerivedLabel.textContent = 'Altitude (m)';
+    s.min = String(AXIS_GSD_MIN);
+    s.max = String(AXIS_GSD_MAX);
+    s.step = '0.1';
+    s.value = state.gsdCmPx;
+  } else {
+    el.axisHeldLabel.textContent = 'Altitude (m)';
+    el.axisDerivedLabel.textContent = 'GSD (cm/px)';
+    s.min = String(altitudeFromGsd(AXIS_GSD_MIN, sensor));
+    s.max = String(altitudeFromGsd(AXIS_GSD_MAX, sensor));
+    s.step = '0.1';
+    s.value = state.altitudeM;
+  }
+}
+
+function readInputs() {
+  state.sensorKey = el.sensor.value;
+  state.lightKey = el.light.value;
+  state.terrainDynamic = el.terrainDynamic.checked;
+  state.speedMs = +el.speed.value;
+  state.frontOverlap = +el.frontOverlap.value / 100;
+  state.sideOverlap = +el.sideOverlap.value / 100;
+  if (state.pinEnd === 'gsd') state.gsdCmPx = +el.axisHeldSlider.value;
+  else state.altitudeM = +el.axisHeldSlider.value;
+}
+
+function compute() {
+  const sensor = SENSORS[state.sensorKey];
+  const shutterS = LIGHT[state.lightKey].shutterS;
+  let gsdCmPx, altitudeM;
+  if (state.pinEnd === 'gsd') {
+    gsdCmPx = state.gsdCmPx;
+    altitudeM = altitudeFromGsd(gsdCmPx, sensor);
+  } else {
+    altitudeM = state.altitudeM;
+    gsdCmPx = gsd(altitudeM, sensor);
+  }
+  const fp = footprint(gsdCmPx, sensor);
+  const overlapCeilingRaw = maxFrontOverlapAtSpeed(state.speedMs, fp.alongTrackM, sensor.captureRateHz);
+  const overlapCeilingDisplay = Math.max(0, overlapCeilingRaw);
+  const blurMaxSpeed = blurCeiling(gsdCmPx, shutterS, MAX_BLUR_PX);
+  const blurPx = state.speedMs * shutterS / (gsdCmPx / 100);
+  const blurMarginPx = MAX_BLUR_PX - blurPx;
+  const blurSpeedHeadroom = blurMaxSpeed - state.speedMs;
+  const frontOverlapFail = state.frontOverlap > overlapCeilingRaw;
+  const blurFail = state.speedMs > blurMaxSpeed;
+  // Verdict: blur + capture-rate only. Pinned alt/GSD is the declared constraint (verdict label);
+  // the derived end is exact by bijective lock and cannot violate the pin. §4 "threshold" = the
+  // line the free knobs (speed, overlap) are checked against, not a max-altitude gate on derived.
+  const inSpec = !frontOverlapFail && !blurFail;
+  const binding = frontOverlapFail && blurFail ? 'both'
+    : frontOverlapFail ? 'capture' : blurFail ? 'blur' : null;
+  return {
+    sensor, gsdCmPx, altitudeM, overlapCeilingRaw, overlapCeilingDisplay,
+    blurMaxSpeed, blurPx, blurMarginPx, blurSpeedHeadroom,
+    frontOverlapFail, blurFail, inSpec, binding
+  };
+}
+
+function setBindingHighlight(node, active) {
+  node.classList.toggle('binding', active);
+}
+
+function repaint() {
+  readInputs();
+  const r = compute();
+
+  if (state.pinEnd === 'gsd') {
+    el.axisHeldOut.textContent = r.gsdCmPx.toFixed(2);
+    el.axisDerivedOut.textContent = Math.round(r.altitudeM);
+  } else {
+    el.axisHeldOut.textContent = Math.round(r.altitudeM);
+    el.axisDerivedOut.textContent = r.gsdCmPx.toFixed(2);
+  }
+
+  el.speedOut.textContent = state.speedMs.toFixed(1);
+  el.frontOverlapOut.textContent = pct(state.frontOverlap);
+  el.frontOverlapCeiling.textContent = pct(r.overlapCeilingDisplay);
+  el.sideOverlapOut.textContent = pct(state.sideOverlap);
+
+  el.blurMargin.textContent = r.blurMarginPx.toFixed(2);
+  el.blurSpeedHeadroom.textContent = r.blurSpeedHeadroom.toFixed(1);
+
+  el.verdictState.textContent = r.inSpec ? 'IN SPEC' : 'OUT OF SPEC';
+  el.verdictState.className = r.inSpec ? 'in-spec' : 'out-of-spec';
+  el.verdictPin.textContent = state.pinEnd === 'gsd'
+    ? 'Pinned GSD ' + r.gsdCmPx.toFixed(2) + ' cm/px'
+    : 'Pinned altitude ' + Math.round(r.altitudeM) + ' m';
+
+  setBindingHighlight(el.frontOverlapCeilingWrap, r.binding === 'capture' || r.binding === 'both');
+  setBindingHighlight(el.frontOverlapRow, r.binding === 'capture' || r.binding === 'both');
+  setBindingHighlight(el.speed.parentElement, r.binding === 'blur' || r.binding === 'both');
+  setBindingHighlight(el.blurMargin.parentElement, r.binding === 'blur' || r.binding === 'both');
+
+  if (r.binding === 'capture') el.bindingNote.textContent = 'Binding constraint: capture rate (front overlap target exceeds ceiling)';
+  else if (r.binding === 'blur') el.bindingNote.textContent = 'Binding constraint: blur ceiling (speed exceeds limit for light/shutter floor)';
+  else if (r.binding === 'both') el.bindingNote.textContent = 'Binding constraints: capture rate and blur ceiling';
+  else el.bindingNote.textContent = '';
+
+  el.terrainNote.textContent = state.terrainDynamic
+    ? 'Terrain: dynamic AGL'
+    : 'Terrain: static AGL (flat ground assumed)';
+}
+
+function onPinToggle() {
+  const pin = document.querySelector('input[name="pinEnd"]:checked').value;
+  if (pin === state.pinEnd) return;
+  const r = compute();
+  if (pin === 'gsd') state.gsdCmPx = r.gsdCmPx;
+  else state.altitudeM = r.altitudeM;
+  state.pinEnd = pin;
+  bindAxisSlider();
+  repaint();
+}
+
+function initFlags() {
+  for (const key in SENSORS) {
+    const o = document.createElement('option');
+    o.value = key;
+    o.textContent = SENSORS[key].label;
+    el.sensor.appendChild(o);
+  }
+  el.sensor.value = state.sensorKey;
+  for (const key in LIGHT) {
+    const o = document.createElement('option');
+    o.value = key;
+    o.textContent = LIGHT[key].label;
+    el.light.appendChild(o);
+  }
+  el.light.value = state.lightKey;
+}
+
+bindAxisSlider();
+initFlags();
+el.axisHeldSlider.oninput = repaint;
+el.speed.oninput = repaint;
+el.frontOverlap.oninput = repaint;
+el.sideOverlap.oninput = repaint;
+el.sensor.onchange = function () { bindAxisSlider(); repaint(); };
+el.light.onchange = repaint;
+el.terrainDynamic.onchange = repaint;
+document.querySelectorAll('input[name="pinEnd"]').forEach(function (r) {
+  r.onchange = onPinToggle;
+});
+repaint();
 </script>
 </body>
 </html>
