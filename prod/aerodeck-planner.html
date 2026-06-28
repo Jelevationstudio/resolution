@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>AeroDeck Planner</title>
+</head>
+<body>
+<script>
+/*
+ * Unit contract (all functions unless noted):
+ *   altitude ........... meters (AGL)
+ *   gsd ................ centimeters per pixel (cm/px)
+ *   focalLength ........ millimeters (mm), from sensor profile
+ *   pixelPitch ......... micrometers (µm), from sensor profile
+ *   footprint .......... meters (along-track / cross-track ground span)
+ *   speed .............. meters per second (m/s)
+ *   shutter ............ seconds (s)
+ *   captureRate ........ hertz (Hz), max sustained trigger rate
+ *   frontOverlap ....... unitless fraction in [0, 1] (UI may show %)
+ *   maxBlur ............ pixels (motion blur budget)
+ *
+ * Conversions used inline:
+ *   cm/px → m/px: divide by 100
+ *   µm → mm: divide by 1000
+ */
+
+const SENSORS = {
+  x10Wide: {
+    label: 'X10 wide',
+    focalLengthMm: 35,
+    pixelPitchUm: 3.76,
+    widthPx: 11664,
+    heightPx: 8750,
+    captureRateHz: 3
+  },
+  mavic3e: {
+    label: 'Mavic 3E',
+    focalLengthMm: 12.29,
+    pixelPitchUm: 3.28,
+    widthPx: 5280,
+    heightPx: 3956,
+    captureRateHz: 3
+  }
+};
+
+// GSD (cm/px) = pixelPitch (µm) × altitude (m) / (focalLength (mm) × 10)
+function gsd(altitudeM, sensor) {
+  return sensor.pixelPitchUm * altitudeM / (sensor.focalLengthMm * 10);
+}
+
+function altitudeFromGsd(gsdCmPx, sensor) {
+  return gsdCmPx * sensor.focalLengthMm * 10 / sensor.pixelPitchUm;
+}
+
+// Ground footprint from GSD and sensor resolution.
+// Convention: fly with sensor width cross-track (max swath); heightPx is along-track (front overlap).
+// Portrait-oriented profiles would swap which dimension maps to alongTrackM.
+function footprint(gsdCmPx, sensor) {
+  const gsdM = gsdCmPx / 100;
+  return {
+    alongTrackM: gsdM * sensor.heightPx,
+    crossTrackM: gsdM * sensor.widthPx
+  };
+}
+
+// Overlap ceiling at current speed: 1 − (speed / captureRate) / alongTrackFootprint.
+// Returns negative when speed exceeds capture rate at this footprint — intentional out-of-spec signal; UI clamps display.
+function maxFrontOverlapAtSpeed(speedMs, alongTrackFootprintM, captureRateHz) {
+  return 1 - speedMs / (alongTrackFootprintM * captureRateHz);
+}
+
+// Speed wall for a target front overlap (inverse of maxFrontOverlapAtSpeed)
+function maxSpeedForFrontOverlap(targetFrontOverlap, alongTrackFootprintM, captureRateHz) {
+  return (1 - targetFrontOverlap) * alongTrackFootprintM * captureRateHz;
+}
+
+// Max speed before motion blur exceeds maxBlurPx: blurPx = speed × shutter / GSD(m/px)
+function blurCeiling(gsdCmPx, shutterS, maxBlurPx) {
+  return maxBlurPx * (gsdCmPx / 100) / shutterS;
+}
+</script>
+</body>
+</html>
