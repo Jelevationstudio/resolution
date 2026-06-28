@@ -6,6 +6,44 @@ Cross-session handoff log. Newest entry first. Append one entry per completed pa
 
 <!-- New entries go directly below this line, newest first. -->
 
+## AeroDeck Planner — Visual Design + Polish (2026-06-28)
+
+| Field | Value |
+|-------|--------|
+| **Agent / pass** | AeroDeck Planner / Agent 3 |
+| **Agent brief** | `Agent Work/AeroDeck-Planner/Agent3-Visual-Design.md` |
+| **Status** | `shipped` |
+| **Depends on** | Agent 2 functional handoff in `prod/aerodeck-planner.html`, Architecture §6 |
+| **Unblocks** | — (final phase) |
+
+### Goal (one sentence)
+Apply full mobile-first visual treatment to the working planner — CSS only, zero computation or reactivity changes.
+
+### Changed
+- **App / engine:** `prod/aerodeck-planner.html` — inlined `<style>` block, viewport meta, `class` hooks on existing body elements (`app`, `slider-block`, `speed-row`, `side-overlap-row`). **16485 bytes** (`wc -c prod/aerodeck-planner.html`). Script block byte-identical to Agent 2 handoff — verified by diff.
+
+### Behavior / contract delta
+- **Layout:** one viewport (`100dvh`, `overflow:hidden`); body CSS grid stacks verdict → pin toggle → sliders → derived → flags.
+- **Verdict band:** large `clamp()` typography; green/red color-coded via `.in-spec` / `.out-of-spec` on `#verdict-state` and `:has()` band background.
+- **Coupling visual:** speed + front overlap share blue left accent; side overlap standalone with neutral accent.
+- **Binding highlight:** `.binding` amber inset border/background on speed row, front-overlap row, ceiling wrap, blur-margin row (unchanged JS targets).
+- **Touch/readability:** 44px min hit areas on radios, selects, checkbox; large range thumbs; high-contrast dark instrument theme. No external assets.
+
+### Verify
+- Commands run: `diff` Agent 2 vs Agent 3 `<script>` blocks; `wc -c prod/aerodeck-planner.html`; all handoff `id`s present
+- Result: `pass` (16485 bytes; script diff exit 0)
+
+### Deferred
+- Real per-sensor capture rates — **placeholder 3 Hz** — **sensor data pass**
+
+### Pitfalls / do not redo
+- Do not edit `<script>` in polish passes — styling is CSS + class hooks only.
+- Do not wrap slider rows in new DOM nodes — JS uses `.parentElement` for binding highlight.
+- Negative overlap ceiling display clamp unchanged; verdict uses raw value.
+
+### Next agent should
+- — (AeroDeck Planner phase complete). Ship `prod/aerodeck-planner.html` when ready.
+
 ## AeroDeck Planner — Structure + Reactivity (2026-06-28)
 
 | Field | Value |
@@ -20,7 +58,7 @@ Cross-session handoff log. Newest entry first. Append one entry per completed pa
 Wrap the computation core in functional HTML — sliders, readouts, pinned-end toggle, flags — with live `oninput` reactivity and no styling.
 
 ### Changed
-- **App / engine:** `prod/aerodeck-planner.html` — full `<body>` structure, UI state/repaint layer, `LIGHT` shutter-floor const; Agent 1 functions unchanged. No `<style>` block yet (Agent 3). **10999 bytes** (`wc -c prod/aerodeck-planner.html`).
+- **App / engine:** `prod/aerodeck-planner.html` — full `<body>` structure, UI state/repaint layer, `LIGHT` shutter-floor const; Agent 1 functions unchanged. No `<style>` block yet (Agent 3). **11544 bytes** (`wc -c prod/aerodeck-planner.html`).
 
 ### Behavior / contract delta
 - **Reactivity:** every slider, select, checkbox, and pin-end radio calls `repaint()` on input/change. No calculate button.
@@ -56,7 +94,7 @@ Wrap the computation core in functional HTML — sliders, readouts, pinned-end t
 
 ### Verify
 - Commands run: Node round-trip + monotonicity (Mavic 3E @ 100 m: ceiling drops with speed, rises with altitude; blur fail at 20 m/s; raising alt clears capture fail); `wc -c prod/aerodeck-planner.html`
-- Result: `pass` (10999 bytes)
+- Result: `pass` (11544 bytes)
 
 ### Deferred
 - Visual treatment (`<style>`, dvh, clamp typography, color-coded verdict) — **Agent 3** — **Agent 3**

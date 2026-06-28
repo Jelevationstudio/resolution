@@ -2,9 +2,90 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>AeroDeck Planner</title>
+<style>
+:root{
+  --bg:#0f1419;--surface:#1a2332;--text:#e8edf4;--muted:#8b9cb3;
+  --in-spec:#3dd68c;--in-spec-bg:#0f2e22;--out-spec:#ff6b6b;--out-spec-bg:#2e1515;
+  --accent:#5b9cf5;--binding:#ffc14d;--border:#2a3544;
+}
+*,*::before,*::after{box-sizing:border-box}
+html,body{height:100dvh;margin:0;overflow:hidden}
+body.app{
+  display:grid;grid-template-rows:auto auto minmax(0,1fr) auto auto;
+  gap:clamp(.35rem,1.2dvh,.5rem);
+  padding:clamp(.5rem,2dvw,.75rem);
+  padding-bottom:max(clamp(.5rem,2dvw,.75rem),env(safe-area-inset-bottom));
+  background:var(--bg);color:var(--text);
+  font-family:system-ui,-apple-system,sans-serif;
+  font-size:clamp(.8125rem,2.8dvh,.9375rem);line-height:1.3;
+}
+#verdict{text-align:center;padding:clamp(.6rem,2.5dvh,1rem);border-radius:.5rem}
+#verdict:has(.in-spec){background:var(--in-spec-bg);border:2px solid var(--in-spec)}
+#verdict:has(.out-of-spec){background:var(--out-spec-bg);border:2px solid var(--out-spec)}
+#verdict-state{display:block;font-size:clamp(1.375rem,6dvh,2rem);font-weight:800;letter-spacing:.04em}
+#verdict-state.in-spec{color:var(--in-spec)}
+#verdict-state.out-of-spec{color:var(--out-spec)}
+#verdict-pin{display:block;margin-top:.25rem;font-size:clamp(.75rem,2.5dvh,.875rem);color:var(--muted)}
+#pin-toggle{display:flex;gap:.5rem;justify-content:center}
+#pin-toggle label{
+  flex:1;display:flex;align-items:center;justify-content:center;gap:.35rem;
+  min-height:44px;padding:.35rem .5rem;background:var(--surface);
+  border:1px solid var(--border);border-radius:.375rem;cursor:pointer;
+  font-size:clamp(.75rem,2.5dvh,.8125rem);
+}
+#pin-toggle input{accent-color:var(--accent);width:1.1rem;height:1.1rem}
+#pin-toggle label:has(:checked){border-color:var(--accent);background:#1e3a5f}
+#sliders{display:flex;flex-direction:column;gap:clamp(.3rem,1dvh,.45rem);min-height:0;overflow:hidden}
+.slider-block,#axis-held,#axis-derived{
+  background:var(--surface);border:1px solid var(--border);border-radius:.375rem;
+  padding:clamp(.3rem,1dvh,.45rem) clamp(.45rem,2vw,.6rem);
+  display:grid;grid-template-columns:1fr auto;grid-template-rows:auto auto;gap:0 .5rem;align-items:center;
+}
+.slider-block label,#axis-held label,#axis-derived label{
+  grid-column:1/-1;font-weight:600;color:var(--muted);
+  font-size:clamp(.6875rem,2.2dvh,.8125rem);text-transform:uppercase;letter-spacing:.03em;
+}
+.slider-block input[type=range],#axis-held-slider{grid-column:1;margin:0}
+.slider-block output,#axis-held-out{grid-column:2}
+#axis-derived{grid-template-rows:auto;grid-template-columns:1fr auto}
+#axis-derived-label{grid-column:1}
+#axis-derived-out{grid-column:2;font-size:clamp(1.125rem,4dvh,1.5rem)}
+.speed-row,#front-overlap-row{border-left:3px solid var(--accent)}
+.side-overlap-row{border-left:3px solid #6b7280;margin-top:clamp(.2rem,.8dvh,.3rem)}
+#front-overlap-ceiling-wrap{grid-column:1/-1;font-size:clamp(.6875rem,2.2dvh,.8125rem);color:var(--muted)}
+#front-overlap-ceiling-wrap output{color:var(--accent);font-weight:700}
+output{font-size:clamp(1rem,3.8dvh,1.25rem);font-weight:700;font-variant-numeric:tabular-nums}
+input[type=range]{width:100%;height:2.75rem;-webkit-appearance:none;appearance:none;background:transparent;cursor:pointer}
+input[type=range]::-webkit-slider-runnable-track{height:.5rem;background:var(--border);border-radius:.25rem}
+input[type=range]::-webkit-slider-thumb{
+  -webkit-appearance:none;width:1.75rem;height:1.75rem;margin-top:-.625rem;
+  background:var(--accent);border-radius:50%;border:2px solid #fff;
+}
+input[type=range]::-moz-range-track{height:.5rem;background:var(--border);border-radius:.25rem;border:0}
+input[type=range]::-moz-range-thumb{
+  width:1.75rem;height:1.75rem;background:var(--accent);border-radius:50%;border:2px solid #fff;
+}
+.binding{border-color:var(--binding)!important;box-shadow:inset 0 0 0 1px var(--binding);background:#2a2418!important}
+#derived{
+  font-size:clamp(.6875rem,2.2dvh,.8125rem);color:var(--muted);
+  padding:clamp(.35rem,1.2dvh,.5rem) clamp(.5rem,2vw,.65rem);
+  background:#121820;border:1px solid var(--border);border-radius:.375rem;
+}
+#derived output{color:var(--text);font-weight:600;font-size:clamp(.875rem,3dvh,1rem)}
+#binding-note{margin-top:.25rem;color:var(--binding);font-weight:600}
+#flags{
+  display:flex;flex-wrap:wrap;gap:.5rem .75rem;align-items:center;
+  font-size:clamp(.6875rem,2.2dvh,.8125rem);
+}
+#flags label{display:flex;align-items:center;gap:.3rem;min-height:44px}
+#flags select{min-height:44px;font-size:inherit;background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:.25rem;padding:0 .4rem}
+#flags input[type=checkbox]{width:1.25rem;height:1.25rem;accent-color:var(--accent)}
+#terrain-note{flex:1 1 100%;color:var(--muted);font-size:clamp(.625rem,2dvh,.75rem)}
+</style>
 </head>
-<body>
+<body class="app">
 <div id="verdict">
   <span id="verdict-state">—</span>
   <span id="verdict-pin">—</span>
@@ -25,18 +106,18 @@
     <label id="axis-derived-label">Altitude (m)</label>
     <output id="axis-derived-out">—</output>
   </div>
-  <div>
+  <div class="slider-block speed-row">
     <label for="speed">Speed (m/s)</label>
     <input type="range" id="speed" min="1" max="25" step="0.5" value="8">
     <output id="speed-out">8.0</output>
   </div>
-  <div id="front-overlap-row">
+  <div class="slider-block" id="front-overlap-row">
     <label for="front-overlap">Front overlap</label>
     <input type="range" id="front-overlap" min="50" max="95" step="1" value="80">
     <output id="front-overlap-out">80%</output>
     <span id="front-overlap-ceiling-wrap">ceiling <output id="front-overlap-ceiling">—</output></span>
   </div>
-  <div>
+  <div class="slider-block side-overlap-row">
     <label for="side-overlap">Side overlap</label>
     <input type="range" id="side-overlap" min="50" max="90" step="1" value="70">
     <output id="side-overlap-out">70%</output>
