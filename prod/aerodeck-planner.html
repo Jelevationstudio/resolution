@@ -6,9 +6,39 @@
 <title>AeroDeck Planner</title>
 <style>
 :root{
-  --bg:#0f1419;--surface:#1a2332;--text:#e8edf4;--muted:#8b9cb3;
-  --in-spec:#3dd68c;--in-spec-bg:#0f2e22;--out-spec:#ff6b6b;--out-spec-bg:#2e1515;
-  --accent:#5b9cf5;--binding:#ffc14d;--border:#2a3544;
+  --color-bg:#ffffff;
+  --color-surface:#f0f0f0;
+  --color-rule:#e5e5e5;
+  --color-ink-heading:#2d2d2d;
+  --color-ink:#4a4a4a;
+  --color-ink-muted:#6b6b6b;
+  --color-accent:#E8722C;
+  --color-accent-hover:#D55E1E;
+  --color-on-accent:#ffffff;
+  --color-link:#1a3a8f;
+  --color-in-spec:#22c55e;
+  --color-in-spec-bg:#ecfdf5;
+  --color-out-of-spec:#dc2626;
+  --color-out-of-spec-bg:#fef2f2;
+  --color-binding:#E8722C;
+  --color-binding-bg:#fef3e8;
+  --font-sans:'Inter','Roboto',system-ui,-apple-system,'Segoe UI',sans-serif;
+  --fw-regular:400;
+  --fw-medium:500;
+  --fw-semibold:600;
+  --fw-bold:700;
+  --fw-extrabold:800;
+  --letter-caps:0.08em;
+  --space-1:0.25rem;
+  --space-2:0.5rem;
+  --space-3:0.75rem;
+  --space-4:1rem;
+  --radius-sm:4px;
+  --radius-md:14px;
+  --radius-lg:18px;
+  --radius-full:999px;
+  --shadow-subtle:0 1px 2px rgba(0,0,0,0.04);
+  --shadow-card-hover:0 2px 8px rgba(0,0,0,0.06);
 }
 *,*::before,*::after{box-sizing:border-box}
 html,body{height:100dvh;margin:0;overflow:hidden}
@@ -17,34 +47,34 @@ body.app{
   gap:clamp(.35rem,1.2dvh,.5rem);
   padding:clamp(.5rem,2dvw,.75rem);
   padding-bottom:max(clamp(.5rem,2dvw,.75rem),env(safe-area-inset-bottom));
-  background:var(--bg);color:var(--text);
-  font-family:system-ui,-apple-system,sans-serif;
+  background:var(--color-bg);color:var(--color-ink);
+  font-family:var(--font-sans);
   font-size:clamp(.8125rem,2.8dvh,.9375rem);line-height:1.3;
 }
 #verdict{text-align:center;padding:clamp(.6rem,2.5dvh,1rem);border-radius:.5rem}
-#verdict:has(.in-spec){background:var(--in-spec-bg);border:2px solid var(--in-spec)}
-#verdict:has(.out-of-spec){background:var(--out-spec-bg);border:2px solid var(--out-spec)}
+#verdict:has(.in-spec){background:var(--color-in-spec-bg);border:2px solid var(--color-in-spec)}
+#verdict:has(.out-of-spec){background:var(--color-out-of-spec-bg);border:2px solid var(--color-out-of-spec)}
 #verdict-state{display:block;font-size:clamp(1.375rem,6dvh,2rem);font-weight:800;letter-spacing:.04em}
-#verdict-state.in-spec{color:var(--in-spec)}
-#verdict-state.out-of-spec{color:var(--out-spec)}
-#verdict-pin{display:block;margin-top:.25rem;font-size:clamp(.75rem,2.5dvh,.875rem);color:var(--muted)}
+#verdict-state.in-spec{color:var(--color-in-spec)}
+#verdict-state.out-of-spec{color:var(--color-out-of-spec)}
+#verdict-pin{display:block;margin-top:.25rem;font-size:clamp(.75rem,2.5dvh,.875rem);color:var(--color-ink-muted)}
 #pin-toggle{display:flex;gap:.5rem;justify-content:center}
 #pin-toggle label{
   flex:1;display:flex;align-items:center;justify-content:center;gap:.35rem;
-  min-height:44px;padding:.35rem .5rem;background:var(--surface);
-  border:1px solid var(--border);border-radius:.375rem;cursor:pointer;
+  min-height:44px;padding:.35rem .5rem;background:var(--color-surface);
+  border:1px solid var(--color-rule);border-radius:.375rem;cursor:pointer;
   font-size:clamp(.75rem,2.5dvh,.8125rem);
 }
-#pin-toggle input{accent-color:var(--accent);width:1.1rem;height:1.1rem}
-#pin-toggle label:has(:checked){border-color:var(--accent);background:#1e3a5f}
+#pin-toggle input{accent-color:var(--color-accent);width:1.1rem;height:1.1rem}
+#pin-toggle label:has(:checked){border-color:var(--color-accent);background:#1e3a5f}
 #sliders{display:flex;flex-direction:column;gap:clamp(.3rem,1dvh,.45rem);min-height:0;overflow:hidden}
 .slider-block,#axis-held,#axis-derived{
-  background:var(--surface);border:1px solid var(--border);border-radius:.375rem;
+  background:var(--color-surface);border:1px solid var(--color-rule);border-radius:.375rem;
   padding:clamp(.3rem,1dvh,.45rem) clamp(.45rem,2vw,.6rem);
   display:grid;grid-template-columns:1fr auto;grid-template-rows:auto auto;gap:0 .5rem;align-items:center;
 }
 .slider-block label,#axis-held label,#axis-derived label{
-  grid-column:1/-1;font-weight:600;color:var(--muted);
+  grid-column:1/-1;font-weight:600;color:var(--color-ink-muted);
   font-size:clamp(.6875rem,2.2dvh,.8125rem);text-transform:uppercase;letter-spacing:.03em;
 }
 .slider-block input[type=range],#axis-held-slider{grid-column:1;margin:0}
@@ -52,37 +82,37 @@ body.app{
 #axis-derived{grid-template-rows:auto;grid-template-columns:1fr auto}
 #axis-derived-label{grid-column:1}
 #axis-derived-out{grid-column:2;font-size:clamp(1.125rem,4dvh,1.5rem)}
-.speed-row,#front-overlap-row{border-left:3px solid var(--accent)}
+.speed-row,#front-overlap-row{border-left:3px solid var(--color-accent)}
 .side-overlap-row{border-left:3px solid #6b7280;margin-top:clamp(.2rem,.8dvh,.3rem)}
-#front-overlap-ceiling-wrap{grid-column:1/-1;font-size:clamp(.6875rem,2.2dvh,.8125rem);color:var(--muted)}
-#front-overlap-ceiling-wrap output{color:var(--accent);font-weight:700}
+#front-overlap-ceiling-wrap{grid-column:1/-1;font-size:clamp(.6875rem,2.2dvh,.8125rem);color:var(--color-ink-muted)}
+#front-overlap-ceiling-wrap output{color:var(--color-accent);font-weight:700}
 output{font-size:clamp(1rem,3.8dvh,1.25rem);font-weight:700;font-variant-numeric:tabular-nums}
 input[type=range]{width:100%;height:2.75rem;-webkit-appearance:none;appearance:none;background:transparent;cursor:pointer}
-input[type=range]::-webkit-slider-runnable-track{height:.5rem;background:var(--border);border-radius:.25rem}
+input[type=range]::-webkit-slider-runnable-track{height:.5rem;background:var(--color-rule);border-radius:.25rem}
 input[type=range]::-webkit-slider-thumb{
   -webkit-appearance:none;width:1.75rem;height:1.75rem;margin-top:-.625rem;
-  background:var(--accent);border-radius:50%;border:2px solid #fff;
+  background:var(--color-accent);border-radius:50%;border:2px solid #fff;
 }
-input[type=range]::-moz-range-track{height:.5rem;background:var(--border);border-radius:.25rem;border:0}
+input[type=range]::-moz-range-track{height:.5rem;background:var(--color-rule);border-radius:.25rem;border:0}
 input[type=range]::-moz-range-thumb{
-  width:1.75rem;height:1.75rem;background:var(--accent);border-radius:50%;border:2px solid #fff;
+  width:1.75rem;height:1.75rem;background:var(--color-accent);border-radius:50%;border:2px solid #fff;
 }
-.binding{border-color:var(--binding)!important;box-shadow:inset 0 0 0 1px var(--binding);background:#2a2418!important}
+.binding{border-color:var(--color-binding)!important;box-shadow:inset 0 0 0 1px var(--color-binding);background:var(--color-binding-bg)!important}
 #derived{
-  font-size:clamp(.6875rem,2.2dvh,.8125rem);color:var(--muted);
+  font-size:clamp(.6875rem,2.2dvh,.8125rem);color:var(--color-ink-muted);
   padding:clamp(.35rem,1.2dvh,.5rem) clamp(.5rem,2vw,.65rem);
-  background:#121820;border:1px solid var(--border);border-radius:.375rem;
+  background:#121820;border:1px solid var(--color-rule);border-radius:.375rem;
 }
-#derived output{color:var(--text);font-weight:600;font-size:clamp(.875rem,3dvh,1rem)}
-#binding-note{margin-top:.25rem;color:var(--binding);font-weight:600}
+#derived output{color:var(--color-ink);font-weight:600;font-size:clamp(.875rem,3dvh,1rem)}
+#binding-note{margin-top:.25rem;color:var(--color-binding);font-weight:600}
 #flags{
   display:flex;flex-wrap:wrap;gap:.5rem .75rem;align-items:center;
   font-size:clamp(.6875rem,2.2dvh,.8125rem);
 }
 #flags label{display:flex;align-items:center;gap:.3rem;min-height:44px}
-#flags select{min-height:44px;font-size:inherit;background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:.25rem;padding:0 .4rem}
-#flags input[type=checkbox]{width:1.25rem;height:1.25rem;accent-color:var(--accent)}
-#terrain-note{flex:1 1 100%;color:var(--muted);font-size:clamp(.625rem,2dvh,.75rem)}
+#flags select{min-height:44px;font-size:inherit;background:var(--color-surface);color:var(--color-ink);border:1px solid var(--color-rule);border-radius:.25rem;padding:0 .4rem}
+#flags input[type=checkbox]{width:1.25rem;height:1.25rem;accent-color:var(--color-accent)}
+#terrain-note{flex:1 1 100%;color:var(--color-ink-muted);font-size:clamp(.625rem,2dvh,.75rem)}
 </style>
 </head>
 <body class="app">

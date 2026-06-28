@@ -6,6 +6,44 @@ Cross-session handoff log. Newest entry first. Append one entry per completed pa
 
 <!-- New entries go directly below this line, newest first. -->
 
+## Brand Restyle — Token Adoption (2026-06-28)
+
+| Field | Value |
+|-------|--------|
+| **Agent / pass** | Brand Restyle / Agent 1 |
+| **Agent brief** | `Agent Work/Brand Restyle/Agent1-Token-Adoption.md` |
+| **Status** | `shipped` |
+| **Depends on** | Agent 3 visual handoff in `prod/aerodeck-planner.html`, Agent 0 locked decisions |
+| **Unblocks** | Agent 2 (Apply the skin) |
+
+### Goal (one sentence)
+Inline curated IFT light-theme design tokens plus planner semantic pass/fail/binding tokens into `:root` — no component restyling.
+
+### Changed
+- **App / engine:** `prod/aerodeck-planner.html` — replaced dark `:root` block with IFT color/type/spacing/radius/shadow tokens; added `--color-in-spec`, `--color-out-of-spec`, `--color-binding` pairs; rewired existing `var()` references to new token names; body `font-family` → `--font-sans` stack. **17403 bytes** (`wc -c prod/aerodeck-planner.html`). Script block byte-identical to pre-pass — verified by diff.
+
+### Behavior / contract delta
+- **Palette:** white bg, light surfaces, IFT orange accent (`#E8722C`); pass/fail greens/reds harmonized with light theme; binding mapped to accent orange + `#fef3e8` bg.
+- **Typography:** closest-match stack (`Inter`, `Roboto`, system-ui…) — no CDN, no embed.
+- **Component CSS:** unchanged layout/treatment; a few legacy dark-theme hex literals remain (`#derived`, pin-toggle checked state) — intentional mid-transition artifacts for Agent 2.
+
+### Verify
+- Commands run: `diff` pre-pass vs post-pass `<script>` blocks (tag-delimited); `wc -c prod/aerodeck-planner.html`; id/div counts vs pre-pass; grep for old token names and Google Fonts links
+- Result: `pass` (17403 bytes; script diff exit 0; 28 ids, 12 divs unchanged)
+
+### Deferred
+- Full component light-theme treatment — **Agent 2 scope** — **Agent 2**
+
+### Pitfalls / do not redo
+- Do not port chat/rail/citation/motion tokens from `tokens.css` — planner doesn't use them.
+- Do not link external CSS or Google Fonts — offline `file://` constraint stands.
+- Hardcoded `#121820` on `#derived` and `#1e3a5f` on checked pin-toggle are known; Agent 2 replaces them.
+
+### Next agent should
+- Open `Agent Work/Brand Restyle/Agent2-Apply-Skin.md` and rewrite component CSS to the light brand using the new tokens.
+- Replace remaining dark-theme hex literals; adopt `--radius-*`, `--shadow-*`, `--space-*`, `--fw-*`, `--letter-caps` where appropriate.
+- Do not touch `<script>` or DOM structure.
+
 ## AeroDeck Planner — Visual Design + Polish (2026-06-28)
 
 | Field | Value |

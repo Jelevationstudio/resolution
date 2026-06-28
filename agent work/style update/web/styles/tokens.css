@@ -1,0 +1,128 @@
+/* Single source of truth: cs-demo/style-demo.html — semantic names aligned with cs-demo/Agent Work/StyleGuide.md */
+
+:root {
+  /* === color === */
+  --color-ink-heading: #2d2d2d;
+  --color-ink: #4a4a4a;
+  --color-ink-nav: #0a0a0a;
+  --color-ink-muted: #6b6b6b;
+  --color-bg: #ffffff;
+  --color-surface: #f0f0f0;
+  --color-rule: #e5e5e5;
+  --color-accent: #E8722C;
+  --color-accent-hover: #D55E1E;
+  --color-on-accent: #ffffff;
+  --color-link: #1a3a8f;
+  --color-link-hover: #0f2a6b;
+  --color-status-online: #22c55e;
+  --color-safety-bg: #fef3e8;
+  --color-safety-ink: #7c4a1e;
+  --color-tip-bg: #eff6ff;
+  --color-tip-ink: #1e3a5f;
+  --color-tip-accent: #2563eb;
+  --color-note-bg: #f5f5f5;
+  --color-note-ink: #525252;
+  --color-note-accent: #6b6b6b;
+  /* Same hex as --color-ink-nav; separate token for footer surface semantics */
+  --color-footer-bg: #0a0a0a;
+  --color-footer-ink: #a3a3a3;
+  --color-footer-link: #d4d4d4;
+  --color-footer-link-hover: #ffffff;
+
+  /* === typography === */
+  --font-sans: 'Inter', system-ui, sans-serif;
+  --font-mono: 'Inter', monospace;
+  --fw-regular: 400;
+  --fw-medium: 500;
+  --fw-semibold: 600;
+  --fw-bold: 700;
+  --fw-extrabold: 800;
+  --text-xs: 0.75rem;
+  --text-sm: 0.8125rem;
+  --text-md: 0.875rem;
+  --text-base: 1rem;
+  --text-lg: 1.25rem;
+  --text-hero-min: 2.25rem;
+  --text-hero-max: 4.5rem;
+  --text-hero-sub-min: 1rem;
+  --text-hero-sub-max: 1.125rem;
+  --lh-body: 1.6;
+  --lh-tight: 1.1;
+  --lh-message: 1.55;
+  --lh-callout: 1.5;
+  --letter-caps: 0.08em;
+
+  /* Chat portal — message typography */
+  --text-chat: 0.9375rem;        /* 15px — one step up from --text-md for sustained reading */
+  --lh-chat: 1.6;                /* slightly more open than --lh-message for breathing room */
+  --fw-chat-user: var(--fw-regular);
+  --fw-chat-agent: var(--fw-medium);
+  --letter-chat-label: 0.12em;   /* caps tracking for the agent role label */
+  --text-chat-label: 0.6875rem;  /* 11px caps label */
+
+  /* Chat portal — message bubble tints */
+  --color-chat-user-bg: color-mix(in srgb, var(--color-accent) 50%, transparent);
+  --color-chat-agent-bg: color-mix(in srgb, var(--color-link) 50%, transparent);
+
+  /* === spacing === */
+  --space-1: 0.25rem;
+  --space-1-5: 0.375rem;
+  --space-2: 0.5rem;
+  --space-2-5: 0.625rem;
+  --space-3: 0.75rem;
+  --space-3-5: 0.875rem;
+  --space-4: 1rem;
+  --space-5: 1.25rem;
+  --space-6: 1.5rem;
+  --space-7: 1.75rem;
+  --space-8: 2rem;
+  --layout-nav-height: 80px;
+  --layout-container-max: 1200px;
+  --layout-chat-max: 720px;
+  --layout-chat-min: 480px;
+  --layout-rail-min: 420px;
+  --layout-workspace-breakpoint: 1100px;
+  --layout-chat-messages-max: 520px;
+  --layout-logo-height: 36px;
+  --layout-card-image-height: 120px;
+  --layout-section-title-gap: 2.5rem;
+  --layout-section-pad-y-min: 4rem;
+  --layout-section-pad-y-max: 6rem;
+  --layout-section-pad-x-min: 1.25rem;
+  --layout-section-pad-x-max: 3rem;
+  --layout-hero-pad-y-min: 6rem;
+  --layout-hero-pad-y-max: 8rem;
+  --layout-nav-link-gap: 2rem;
+  --layout-cards-gap: 1.5rem;
+  --layout-msg-max-width: 88%;
+  --layout-msg-max-width-sm: 95%;
+  --border-width: 1px;
+  --border-width-thick: 1.5px;
+  --border-width-callout: 4px;
+  --size-status-dot: 8px;
+  --opacity-disabled: 0.7;
+  --z-nav: 100;
+
+  /* === radius === */
+  --radius-sm: 4px;
+  --radius-md: 14px;
+  --radius-lg: 18px;
+  --radius-full: 999px;
+
+  /* === shadow === */
+  --shadow-subtle: 0 1px 2px rgba(0, 0, 0, 0.04);
+  --shadow-card-hover: 0 2px 8px rgba(0, 0, 0, 0.06);
+
+  /* === motion === */
+  --duration-interaction: 0.15s;
+  --motion-rail-in: 240ms;
+  --motion-pane-in: 200ms;
+  --motion-pane-pulse: 600ms;
+  --motion-iframe-in: 150ms;
+  --rail-iframe-timeout: 6000ms;
+
+  /* === breakpoint === */
+  /* rem literals used in @media — CSS custom properties are invalid in media queries */
+  --bp-sm: 40rem;
+  --bp-md: 60rem;
+}

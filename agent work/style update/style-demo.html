@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Inspired Flight Support — Style Verification</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="web/styles/tokens.css">
+  <link rel="stylesheet" href="web/styles/components.css">
+</head>
+<body>
+
+  <!-- 1. Sticky Nav -->
+  <header class="nav">
+    <a href="style-demo.html" class="nav__logo">
+      <img src="web/assets/IFT-no-prop-black.png" alt="Inspired Flight Technologies">
+      <span class="nav__logo-suffix">Support</span>
+    </a>
+    <nav aria-label="Main">
+      <ul class="nav__links">
+        <li><a href="https://docs.inspiredflight.com/inspired-documentation">Docs</a></li>
+        <li><a href="https://www.inspiredflight.com/training">Training</a></li>
+        <li><a href="https://shop.inspiredflight.com/pages/pricing-plans">Care Plans</a></li>
+        <li><a href="https://www.inspiredflight.com/support-services">Contact</a></li>
+      </ul>
+    </nav>
+    <div class="nav__actions">
+      <a href="https://www.inspiredflight.com/support-services" class="btn btn--ghost">Contact</a>
+      <a href="https://docs.inspiredflight.com/inspired-documentation" class="btn btn--primary">Docs</a>
+    </div>
+  </header>
+
+  <main>
+
+    <!-- 2. Hero -->
+    <section class="section section--hero">
+      <div class="container">
+        <p class="eyebrow">Style Verification — Not Production</p>
+        <h1 class="hero__title">Built for real work. Backed by real support.</h1>
+        <p class="hero__subhead">Documentation, training, care plans, and direct access to the team behind every Inspired Flight product and service.</p>
+        <a href="#chat-preview" class="btn btn--primary">Talk to an Expert</a>
+      </div>
+    </section>
+
+    <!-- 3. Coverage Cards -->
+    <section class="section">
+      <div class="container">
+        <p class="eyebrow">Coverage</p>
+        <h2 class="section-title">Resources for Every Mission</h2>
+        <div class="cards-grid">
+          <a href="https://docs.inspiredflight.com/inspired-documentation" class="card">
+            <div class="card__image" aria-hidden="true"></div>
+            <h3 class="card__title">Knowledge Base</h3>
+            <p class="card__desc">Specs, firmware guides, and troubleshooting across aircraft, software, payloads, and accessories — searchable and always current.</p>
+            <span class="card__link">View Docs →</span>
+          </a>
+          <a href="operator-notices.html" class="card">
+            <div class="card__image" aria-hidden="true"></div>
+            <h3 class="card__title">Operator Notices</h3>
+            <p class="card__desc">Critical firmware advisories, service bulletins, and field updates that affect your fleet.</p>
+            <span class="card__link">View Notices →</span>
+          </a>
+          <a href="https://www.inspiredflight.com/training" class="card">
+            <div class="card__image" aria-hidden="true"></div>
+            <h3 class="card__title">Training</h3>
+            <p class="card__desc">Operator certification, payload integration courses, and advanced flight planning from the IFT team.</p>
+            <span class="card__link">View Training →</span>
+          </a>
+          <a href="https://shop.inspiredflight.com/pages/pricing-plans" class="card">
+            <div class="card__image" aria-hidden="true"></div>
+            <h3 class="card__title">Care Plans</h3>
+            <p class="card__desc">Inspired Care protection — extended warranty, priority support, and proactive maintenance to maximize uptime.</p>
+            <span class="card__link">View Plans →</span>
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <!-- 4. Chat Preview -->
+    <section class="section" id="chat-preview">
+      <div class="container">
+        <p class="eyebrow">Live Preview</p>
+        <h2 class="section-title">Agent in Action</h2>
+        <div class="chat-workspace" data-rail-state="closed">
+          <div class="chat-shell">
+            <div class="chat-header">
+              <span class="chat-header__dot" aria-hidden="true"></span>
+              <span class="chat-header__label">Inspired Flight Support</span>
+              <span class="chat-header__meta">Products · Software · Services</span>
+            </div>
+            <div class="chat-messages">
+
+            <div class="msg msg--user">
+              After a recent firmware update, my aircraft won't enter Return-to-Home when I trigger it from the controller. It just hovers in place. What should I check?
+            </div>
+
+            <div class="msg msg--agent">
+              <p>Return-to-Home is likely disabled because the new firmware reset your <code>Return-to-Home</code> altitude threshold to the factory default, which may be above your current AGL.</p>
+              <p><strong>Likely cause:</strong> The firmware update reverts RTH settings unless you migrate your config profile before updating.</p>
+              <p><strong>Check:</strong> Open the IF Pilot app → Aircraft Settings → Safety → confirm <code>Return-to-Home</code> is enabled and the minimum altitude is set below your operating height.</p>
+              <div class="callout">
+                <span class="callout__label">Safety:</span> Do not force-land or override geofence limits to test RTH. Verify prop clearance and airspace before initiating any automated return sequence.
+              </div>
+              <div class="citation">
+                Source: <a href="https://docs.inspiredflight.com/if1200/return-to-home">docs.inspiredflight.com/if1200/return-to-home</a>
+              </div>
+            </div>
+
+            <div class="msg msg--user">
+              Can I use a third-party RTK base station for centimeter-level RTH landing?
+            </div>
+
+            <div class="msg msg--agent">
+              <p>I don't see that covered in the Inspired Flight knowledge base. For a confirmed answer, please reach out to IF Support: <a href="https://www.inspiredflight.com/support-services">https://www.inspiredflight.com/support-services</a></p>
+            </div>
+
+          </div>
+          <div class="chat-input">
+            <input type="text" class="chat-input__field" placeholder="Ask about Inspired Flight products and services…" disabled aria-label="Message input (disabled)">
+          </div>
+          </div>
+          <aside class="chat-rail" id="chat-rail" aria-label="Source preview" hidden>
+            <p class="chat-rail__empty" id="chat-rail-empty">Open a source to preview it here.</p>
+            <div class="chat-rail__stack" id="chat-rail-stack"></div>
+          </aside>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- 5. Footer -->
+  <footer class="footer">
+    <p class="footer__note">Style verification artifact — not a production page.</p>
+    <p><a href="https://www.inspiredflight.com">inspiredflight.com</a></p>
+  </footer>
+
+</body>
+</html>
