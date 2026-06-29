@@ -20,6 +20,8 @@
   --color-in-spec-bg:#ecfdf5;
   --color-out-of-spec:#dc2626;
   --color-out-of-spec-bg:#fef2f2;
+  --color-caution:#ca8a04;
+  --color-caution-bg:#fefce8;
   --color-binding:#E8722C;
   --color-binding-bg:#fef3e8;
   --font-sans:'Inter','Roboto',system-ui,-apple-system,'Segoe UI',sans-serif;
@@ -57,12 +59,14 @@ body.app{
 }
 #verdict:has(.in-spec){background:var(--color-in-spec-bg);border:2px solid var(--color-in-spec)}
 #verdict:has(.out-of-spec){background:var(--color-out-of-spec-bg);border:2px solid var(--color-out-of-spec)}
+#verdict:has(.caution){background:var(--color-caution-bg);border:2px solid var(--color-caution)}
 #verdict-state{
   display:block;font-size:clamp(1.375rem,6dvh,2rem);
   font-weight:var(--fw-extrabold);letter-spacing:var(--letter-caps);text-transform:uppercase;
 }
 #verdict-state.in-spec{color:var(--color-in-spec)}
 #verdict-state.out-of-spec{color:var(--color-out-of-spec)}
+#verdict-state.caution{color:var(--color-caution)}
 #verdict-pin{display:block;margin-top:var(--space-1);font-size:clamp(.75rem,2.5dvh,.875rem);color:var(--color-ink-muted)}
 #pin-toggle{display:flex;gap:var(--space-2);justify-content:center}
 #pin-toggle label{
@@ -147,6 +151,18 @@ input[type=range]::-moz-range-thumb{
 }
 #flags input[type=checkbox]{width:1.25rem;height:1.25rem;accent-color:var(--color-accent)}
 #terrain-note{flex:1 1 100%;color:var(--color-ink-muted);font-size:clamp(.625rem,2dvh,.75rem)}
+#orientation{display:flex;gap:var(--space-1)}
+#orientation label{
+  display:flex;align-items:center;gap:var(--space-1);min-height:44px;
+  padding:0 var(--space-2);
+  background:var(--color-bg);color:var(--color-ink);
+  border:1px solid var(--color-rule);border-radius:var(--radius-md);
+  font-size:clamp(.6875rem,2.2dvh,.8125rem);cursor:pointer;
+}
+#orientation label:has(:checked){
+  border-color:var(--color-accent);background:var(--color-accent);color:var(--color-on-accent);
+}
+#orientation input{width:1rem;height:1rem;accent-color:var(--color-accent)}
 #verdict-score{margin-top:var(--space-1);display:flex;gap:var(--space-2);justify-content:center;align-items:baseline;flex-wrap:wrap}
 #verdict-band{font-weight:var(--fw-semibold)}
 #verdict-band[data-band="Strong"]{color:var(--color-in-spec)}
@@ -217,6 +233,10 @@ input[type=range]::-moz-range-thumb{
   <label>Terrain
     <select id="terrain-type"></select>
   </label>
+  <span id="orientation">
+    <label><input type="radio" name="orientation" value="landscape" checked> Landscape</label>
+    <label><input type="radio" name="orientation" value="portrait"> Portrait</label>
+  </span>
   <label><input type="checkbox" id="terrain-dynamic"> Dynamic AGL</label>
   <span id="terrain-note"></span>
 </div>
@@ -309,11 +329,14 @@ function altitudeFromGsd(gsdCmPx, sensor) {
   return gsdCmPx * sensor.focalLengthMm * 10 / sensor.pixelPitchUm;
 }
 
-function footprint(gsdCmPx, sensor) {
+function footprint(gsdCmPx, sensor, orientation) {
   const gsdM = gsdCmPx / 100;
+  const portrait = orientation === 'portrait';
+  const alongPx = portrait ? sensor.widthPx : sensor.heightPx;
+  const crossPx = portrait ? sensor.heightPx : sensor.widthPx;
   return {
-    alongTrackM: gsdM * sensor.heightPx,
-    crossTrackM: gsdM * sensor.widthPx
+    alongTrackM: gsdM * alongPx,
+    crossTrackM: gsdM * crossPx
   };
 }
 
@@ -337,7 +360,7 @@ function overlapPenalty(overlap, cfg, weight) {
 
 function scorePlan(contributions) {
   const totalPenalty = contributions.reduce((sum, c) => sum + (c.penalty || 0), 0);
-  const estPct = Math.max(MIN_EST_PCT, MAX_EST_PCT - totalPenalty);
+  const estPct = Math.round(Math.max(MIN_EST_PCT, MAX_EST_PCT - totalPenalty));
   let band = SCORE_BANDS[SCORE_BANDS.length - 1].band;
   for (const b of SCORE_BANDS) {
     if (estPct >= b.min) { band = b.band; break; }
@@ -360,7 +383,8 @@ const state = {
   sideOverlap: 0.7,
   lightKey: 'overcast',
   terrainDynamic: false,
-  terrainType: 'flat'
+  terrainType: 'flat',
+  orientation: 'landscape'
 };
 
 const el = {
@@ -422,6 +446,8 @@ function readInputs() {
   state.lightKey = el.light.value;
   state.terrainType = el.terrainType.value;
   state.terrainDynamic = el.terrainDynamic.checked;
+  const o = document.querySelector('input[name="orientation"]:checked');
+  state.orientation = o ? o.value : 'landscape';
   state.speedMs = +el.speed.value;
   state.frontOverlap = +el.frontOverlap.value / 100;
   state.sideOverlap = +el.sideOverlap.value / 100;
@@ -440,7 +466,7 @@ function compute() {
     altitudeM = state.altitudeM;
     gsdCmPx = gsd(altitudeM, sensor);
   }
-  const fp = footprint(gsdCmPx, sensor);
+  const fp = footprint(gsdCmPx, sensor, state.orientation);
   const overlapCeilingRaw = maxFrontOverlapAtSpeed(state.speedMs, fp.alongTrackM, sensor.captureRateHz);
   const overlapCeilingDisplay = Math.max(0, overlapCeilingRaw);
   const blurMaxSpeed = blurCeiling(gsdCmPx, shutterS, MAX_BLUR_PX);
@@ -514,7 +540,9 @@ function repaint() {
   el.blurSpeedHeadroom.textContent = r.blurSpeedHeadroom.toFixed(1);
 
   el.verdictState.textContent = r.inSpec ? 'IN SPEC' : 'OUT OF SPEC';
-  el.verdictState.className = r.inSpec ? 'in-spec' : 'out-of-spec';
+  el.verdictState.className = !r.inSpec ? 'out-of-spec'
+    : (r.score && r.score.active && r.score.band === 'Weak') ? 'caution'
+    : 'in-spec';
   el.verdictPin.textContent = state.pinEnd === 'gsd'
     ? 'Pinned GSD ' + r.gsdCmPx.toFixed(2) + ' cm/px'
     : 'Pinned altitude ' + Math.round(r.altitudeM) + ' m';
@@ -616,6 +644,9 @@ el.sensor.onchange = function () { bindAxisSlider(); repaint(); };
 el.light.onchange = repaint;
 el.terrainType.onchange = repaint;
 el.terrainDynamic.onchange = repaint;
+document.querySelectorAll('input[name="orientation"]').forEach(function (r) {
+  r.onchange = repaint;
+});
 document.querySelectorAll('input[name="pinEnd"]').forEach(function (r) {
   r.onchange = onPinToggle;
 });

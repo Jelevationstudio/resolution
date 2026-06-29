@@ -6,6 +6,52 @@ Cross-session handoff log. Newest entry first. Append one entry per completed pa
 
 <!-- New entries go directly below this line, newest first. -->
 
+## Sensor Orientation — Orientation Toggle (2026-06-28)
+
+|| Field | Value |
+||-------|--------|
+|| **Agent / pass** | Sensor Orientation / Agent 1 |
+|| **Agent brief** | `agent work/improvments/5 Sensor-Orientation/Agent1-Orientation-Toggle.md` |
+|| **Status** | `shipped` |
+|| **Depends on** | — (semi-independent) |
+|| **Unblocks** | — |
+
+### Goal (one sentence)
+Add a landscape/portrait orientation toggle in `#flags` that selects which sensor axis is along-track in a now-pure `footprint(..., orientation)`, so the front-overlap ceiling recomputes correctly; default exactly reproduces prior behavior; no score contribution.
+
+### Changed
+- **App / engine:** `prod/aerodeck-planner.html` — added `orientation: 'landscape'` to `state`; extended `footprint(gsdCmPx, sensor, orientation)` (pure; landscape: heightPx=along, portrait: widthPx=along); wired `compute()` to pass `state.orientation`; added `readInputs()` query for `input[name="orientation"]`; added `<span id="orientation">` 2-radio group (Landscape/Portrait) inside `#flags` + minimal brand CSS (44px, accent active, tokens only); wired radios via `querySelectorAll` + `onchange=repaint` (modeled on pinEnd pattern). **26386 bytes** (`wc -c`).
+- No changes to GSD math, `MAX_BLUR_PX`, capture rates, `inSpec`/`frontOverlapFail`/`blurFail` paths, score weights/contributions, or any `.parentElement` targets.
+- New DOM id only: "orientation" (container); all prior ids and the two `.parentElement` binding lines preserved exactly.
+
+### Behavior / contract delta
+- Default "Landscape" → `footprint` + front-overlap ceiling + `maxSpeedForFrontOverlap` (if called) identical to pre-change.
+- "Portrait" swaps along/cross px assignment (wide dimension now along-track); ceiling and derived speed-for-overlap update accordingly (hand-checked: at same speed, portrait yields higher front-overlap ceiling due to longer along-track footprint).
+- GSD and altitude/GSD pinning completely unaffected.
+- Orientation is a pure display/correctness flag for footprint axis; does not participate in scoring (no entry in `SCORE_WEIGHTS`, no contribution emitted).
+- UI: two-button radio toggle appears in `#flags` flow, uses existing tokens, 44px targets; change immediately repaints (ceiling moves).
+- One viewport maintained; existing flag selects/checkbox and terrain note untouched in order/behavior.
+
+### Verify
+- Commands run: `wc -c prod/aerodeck-planner.html`; `grep -o 'id="[^"]*"' | sort` (new "orientation" only); `grep -c 'parentElement'` (exactly 2, byte-identical lines); `grep -c 'footprint(gsdCmPx, sensor, state.orientation)'` (1); `grep -c 'id="orientation"'` (1); node simulations of footprint + maxFrontOverlapAtSpeed (landscape matches legacy numbers exactly; portrait swaps dims; ceiling moves higher as expected); node drive of gsd/footprint/ceiling across both orients (GSD invariant, no SCORE_WEIGHTS orientation entry); `ReadLints` on prod file (clean).
+- Result: `pass`
+
+### Deferred
+- Any future visual refinement of the toggle labels (e.g. adding axis hint text) if field use shows operators need more cueing — **not required by this brief**.
+- Real per-sensor portrait/landscape mounting notes (data only).
+
+### Pitfalls / do not redo
+- Never read global `state` from inside `footprint()` — orientation is an explicit argument only.
+- Do not register an orientation score contributor here; the brief states it is not a quality risk.
+- Preserve every prior id and the exact two `.parentElement` expressions for binding highlights.
+- Default must be landscape and produce byte-for-value identical ceilings to before this change.
+- GSD math is invariant; only the px dimension chosen for along/cross changes.
+
+### Next agent should
+1. If continuing Sensor-Orientation work, re-read `Agent0-Overview.md` + `Agent1-Orientation-Toggle.md` + Architecture §4.
+2. Any later change that touches footprint must pass orientation through or explicitly choose landscape for legacy path.
+3. Append further entries newest-first if touching the prod file.
+
 ## Ceiling Violation Visibility — microcopy polish (2026-06-28)
 
 || Field | Value |
