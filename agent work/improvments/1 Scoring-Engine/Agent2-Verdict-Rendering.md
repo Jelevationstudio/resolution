@@ -32,10 +32,10 @@ Render the two-layer verdict — the existing binary gate plus the new robustnes
 - Preserve existing `id`s and the binding-highlight `.parentElement` chain; reuse Agent 1's output, don't recompute.
 
 ## Acceptance Criteria
-- [ ] Two-layer verdict renders when `score.active`: gate state (headline) + band + `Est.` ≈% (with non-guarantee microcopy) + compact reasons.
-- [ ] With the current dormant framework (`active:false`), **no score layer shows** — verdict is byte-for-behavior identical to today.
-- [ ] Gate-fail suppresses the est% per spec; gate stays the visual headline.
-- [ ] No absolute/guarantee language; `Est.` + microcopy present whenever the score shows.
-- [ ] One viewport, nothing scrolls during input; 44px targets retained; brand tokens only (no raw hex).
-- [ ] Existing `id`s and `.parentElement` binding highlight intact and working.
-- [ ] `wc -c prod/aerodeck-planner.html` recorded; CHANGELOG.md entry appended.
+- [x] Two-layer verdict renders when `score.active`: gate state (headline) + band + `Est.` ≈% (with non-guarantee microcopy) + compact reasons.
+- [x] With the current dormant framework (`active:false`), **no score layer shows** — verdict is byte-for-behavior identical to today.
+- [x] Gate-fail suppresses the est% per spec; gate stays the visual headline.
+- [x] No absolute/guarantee language; `Est.` + microcopy present whenever the score shows.
+- [x] One viewport, nothing scrolls during input; 44px targets retained; brand tokens only (no raw hex).
+- [x] Existing `id`s and `.parentElement` binding highlight intact and working.
+- [x] `wc -c prod/aerodeck-planner.html` recorded; CHANGELOG.md entry appended.

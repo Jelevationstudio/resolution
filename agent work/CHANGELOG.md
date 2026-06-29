@@ -6,6 +6,47 @@ Cross-session handoff log. Newest entry first. Append one entry per completed pa
 
 <!-- New entries go directly below this line, newest first. -->
 
+## Scoring Engine — Verdict Rendering (2026-06-28)
+
+|| Field | Value |
+||-------|--------|
+|| **Agent / pass** | Scoring Engine / Agent 2 |
+|| **Agent brief** | `agent work/improvments/1 Scoring-Engine/Agent2-Verdict-Rendering.md` |
+|| **Status** | `shipped` |
+|| **Depends on** | Agent 1 (dormant scoring framework, scorePlan, SCORE_* constants, compute() returning score) |
+|| **Unblocks** | Ceiling-Violation-Visibility folder (shares this verdict rendering) |
+
+### Goal (one sentence)
+Render the two-layer verdict — existing binary gate as headline plus secondary robustness band + `Est. ≈%` + non-guarantee microcopy + compact reasons — only when active and in-spec; otherwise fully hidden.
+
+### Changed
+- **App / engine:** `prod/aerodeck-planner.html` — added token-only CSS rules for verdict score elements; added score DOM subtree inside existing #verdict (verdict-score/band/est/est-note/reasons); extended el map; added conditional paint logic in `repaint()` that consumes `compute().score` and shows band + Est. line + reasons only on (active && inSpec), suppresses on gate fail or dormant. All prior ids and the three `.parentElement` binding calls left byte-identical. **21178 bytes** (`wc -c`).
+
+### Behavior / contract delta
+- Gate (IN SPEC / OUT OF SPEC + pinned line) remains the visual headline and is unchanged.
+- When `score.active && inSpec`: secondary score line appears with band (Strong/Adequate/Weak), `Est. ≈X%`, persistent "estimate · not a guarantee" text, and joined short reasons (compact, no scroll).
+- Dormant (`active:false`, current zero-contributor state) or gate-fail: both score container and reasons are hidden; the verdict block renders exactly as before Agent 2.
+- No impact on compute gate fields, binding highlights, sliders, or any other paint path. Non-guarantee language only; sub-100 cap inherited from framework.
+
+### Verify
+- Commands run: `wc -c prod/aerodeck-planner.html` (21178); node verification of scorePlan (empty → active:false/Strong/95, with penalty → correct band/est/reasons/active); grep for parentElement (exactly the original three lines); id count 35 / div count 14; source inspection confirming new elements are children of #verdict, use only --color-* / --fw-* / clamp() tokens, and score layer is not rendered on dormant path.
+- Result: `pass`
+
+### Deferred
+- Real contributors (overlap-floor, terrain, orientation) — implement and register in their own improvments folders.
+- Ceiling-Violation-Visibility — will reuse the now-shipped two-layer verdict DOM and repaint path.
+
+### Pitfalls / do not redo
+- Never emit band/est%/reasons when !score.active or !inSpec.
+- Do not touch gate booleans (frontOverlapFail/blurFail/inSpec) from score code.
+- Keep reasons treatment one short line; do not introduce wrapping or scroll.
+- Preserve the .parentElement chain for binding exactly as-is.
+
+### Next agent should
+1. Read `agent work/improvments/1 Scoring-Engine/Agent2-Verdict-Rendering.md` + `Scoring-Spec.md` before adding any contributor.
+2. When a contributor folder ships, add its weight(s) to SCORE_WEIGHTS (with one-line rationale) and supply real `{id,label,penalty,reason}` objects from compute() into scorePlan.
+3. Ceiling-Violation-Visibility may now wire into the existing score layer instead of inventing new verdict markup.
+
 ## Scoring Engine — Framework and Spec (2026-06-28)
 
 | Field | Value |
