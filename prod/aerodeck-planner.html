@@ -147,7 +147,10 @@ input[type=range]::-moz-range-thumb{
 #flags input[type=checkbox]{width:1.25rem;height:1.25rem;accent-color:var(--color-accent)}
 #terrain-note{flex:1 1 100%;color:var(--color-ink-muted);font-size:clamp(.625rem,2dvh,.75rem)}
 #verdict-score{margin-top:var(--space-1);display:flex;gap:var(--space-2);justify-content:center;align-items:baseline;flex-wrap:wrap}
-#verdict-band{font-weight:var(--fw-semibold);color:var(--color-in-spec)}
+#verdict-band{font-weight:var(--fw-semibold)}
+#verdict-band[data-band="Strong"]{color:var(--color-in-spec)}
+#verdict-band[data-band="Adequate"]{color:var(--color-binding)}
+#verdict-band[data-band="Weak"]{color:var(--color-out-of-spec)}
 #verdict-est{font-variant-numeric:tabular-nums;color:var(--color-ink-heading)}
 #verdict-est-note{color:var(--color-ink-muted);font-size:clamp(.625rem,2dvh,.6875rem);margin-left:var(--space-1)}
 #verdict-reasons{margin-top:1px;text-align:center;font-size:clamp(.625rem,2dvh,.6875rem);color:var(--color-ink-muted);line-height:1.15}
@@ -271,9 +274,18 @@ const SCORE_BANDS = [
   { band: 'Weak',     min: 0  }
 ];
 
+// Overlap quality floor thresholds (planning conventions, not derived science).
+// Recommended = target for good reconstruction margin; low = point at which quality degrades noticeably.
+const OVERLAP_MIN = {
+  front: { recommended: 0.75, low: 0.60 },
+  side:  { recommended: 0.65, low: 0.50 }
+};
+
 const SCORE_WEIGHTS = {
   // === SCORE CONTRIBUTORS — registered by improvments/* folders ===
   // CONTRIBUTOR[overlap-floor]: Overlap-Quality-Floor folder
+  'overlap-front': 15, // front overlap below recommended reduces reconstruction margin along flight direction
+  'overlap-side':  12, // side overlap below recommended reduces cross-track coverage robustness
   // CONTRIBUTOR[terrain]:       Terrain-Weighting folder
   // CONTRIBUTOR[orientation]:   Sensor-Orientation folder (if it scores)
 };
@@ -304,6 +316,12 @@ function maxSpeedForFrontOverlap(targetFrontOverlap, alongTrackFootprintM, captu
 
 function blurCeiling(gsdCmPx, shutterS, maxBlurPx) {
   return maxBlurPx * (gsdCmPx / 100) / shutterS;
+}
+
+function overlapPenalty(overlap, cfg, weight) {
+  if (overlap >= cfg.recommended) return 0;
+  if (overlap <= cfg.low) return weight;
+  return weight * (cfg.recommended - overlap) / (cfg.recommended - cfg.low);
 }
 
 function scorePlan(contributions) {
@@ -423,11 +441,28 @@ function compute() {
   const inSpec = !frontOverlapFail && !blurFail;
   const binding = frontOverlapFail && blurFail ? 'both'
     : frontOverlapFail ? 'capture' : blurFail ? 'blur' : null;
+
+  const frontPen = overlapPenalty(state.frontOverlap, OVERLAP_MIN.front, SCORE_WEIGHTS['overlap-front']);
+  const sidePen  = overlapPenalty(state.sideOverlap,  OVERLAP_MIN.side,  SCORE_WEIGHTS['overlap-side']);
+  const contributions = [];
+  if (frontPen > 0) contributions.push({
+    id: 'overlap-front',
+    label: 'Front overlap',
+    penalty: frontPen,
+    reason: 'front overlap ' + pct(state.frontOverlap) + ' below recommended ' + pct(OVERLAP_MIN.front.recommended)
+  });
+  if (sidePen > 0) contributions.push({
+    id: 'overlap-side',
+    label: 'Side overlap',
+    penalty: sidePen,
+    reason: 'side overlap ' + pct(state.sideOverlap) + ' below recommended ' + pct(OVERLAP_MIN.side.recommended)
+  });
+
   return {
     sensor, gsdCmPx, altitudeM, overlapCeilingRaw, overlapCeilingDisplay,
     blurMaxSpeed, blurPx, blurMarginPx, blurSpeedHeadroom,
     frontOverlapFail, blurFail, inSpec, binding,
-    score: scorePlan([]) // dormant: no contributors registered; active:false
+    score: scorePlan(contributions)
   };
 }
 
@@ -465,6 +500,7 @@ function repaint() {
   el.verdictScore.hidden = !showScore;
   if (showScore) {
     el.verdictBand.textContent = r.score.band;
+    el.verdictBand.dataset.band = r.score.band;
     el.verdictEst.textContent = 'Est. ≈' + r.score.estPct + '%';
     el.verdictEstNote.textContent = 'estimate · not a guarantee';
     const rs = r.score.reasons || [];

@@ -6,6 +6,92 @@ Cross-session handoff log. Newest entry first. Append one entry per completed pa
 
 <!-- New entries go directly below this line, newest first. -->
 
+## Scoring Engine — Band Color Grading (2026-06-28)
+
+| Field | Value |
+|-------|--------|
+| **Agent / pass** | Scoring Engine / Agent 3 |
+| **Agent brief** | follow-on to `agent work/improvments/1 Scoring-Engine/Agent2-Verdict-Rendering.md` (specific color grading task) |
+| **Status** | `shipped` |
+| **Depends on** | Scoring Engine Agent 2 (score layer DOM + repaint wiring), §11 of Scoring-Spec |
+| **Unblocks** | Ceiling-Violation-Visibility (#4) — both touch the verdict band; mapping now defined in system-of-record |
+
+### Goal (one sentence)
+Grade the secondary verdict band color by its `score.band` value using only existing brand tokens (Strong → --color-in-spec, Adequate → --color-binding, Weak → --color-out-of-spec) so a Weak plan never renders reassuring green; record the mapping in Scoring-Spec.md as the rendering contract; log as Agent 3 for this tasking.
+
+### Changed
+- **App / engine:** `prod/aerodeck-planner.html` — replaced hard-coded `color:var(--color-in-spec)` on `#verdict-band` with base rule + three attribute selectors (`[data-band="Strong"]` etc.) using only the existing semantic tokens; added one line in `repaint()` inside the showScore path: `el.verdictBand.dataset.band = r.score.band;`. No new ids, no new elements, no layout or size changes. **22778 bytes** (`wc -c`).
+- **Agent Work:** `agent work/improvments/1 Scoring-Engine/Scoring-Spec.md` — added §12 "Score Band Color Mapping (Rendering Contract)" with the table, rules (tokens only, gate dominant, subordinate band), and §13 acceptance for this pass.
+
+### Behavior / contract delta
+- When the score layer is shown (`active && inSpec`): the band label ("Strong" / "Adequate" / "Weak") receives the graded color. Weak now appears in `--color-out-of-spec` red; Adequate in `--color-binding` orange.
+- Gate (large IN SPEC / OUT OF SPEC + pin + verdict container backgrounds) remains the headline; band is a smaller secondary line below it.
+- Dormant or gate-fail: score layer (and thus any band color) stays hidden via the existing `hidden` logic.
+- No change to any gate booleans, binding highlights, slider behavior, or .parentElement targets.
+- Non-guarantee framing and sub-100 cap unchanged.
+
+### Verify
+- Commands run: `wc -c prod/aerodeck-planner.html`; `grep -o 'id="[^"]*"' | wc -l` (35); `grep -c '<div'` (14); `grep -n parentElement` (exactly the prior two lines, untouched); `grep -E 'color:.*#'` near band rules (none); inspection that only --color-in-spec / --color-binding / --color-out-of-spec are referenced for the band; Scoring-Spec §12 table matches implementation.
+- Result: `pass`
+
+### Deferred
+- Any refinement of band typography weight/size (intentionally left subordinate).
+- Ceiling-Violation-Visibility work that will also touch the verdict area.
+
+### Pitfalls / do not redo
+- Do not apply --color-in-spec to non-Strong bands.
+- Do not introduce raw hex for band color.
+- Do not increase band prominence or merge it visually with the gate headline.
+- Preserve the exact existing ids and the two `.parentElement` calls for binding highlights.
+- Future band-styling work (incl. #4) must read Scoring-Spec §12 first.
+
+### Next agent should
+1. Before any Ceiling-Violation-Visibility or other verdict-band change, read `Scoring-Spec.md` §12 (the color table is now the contract) and `Agent2-Verdict-Rendering.md`.
+2. When extending the band area, keep the gate as headline and the colored band secondary; continue using only the documented tokens.
+3. Append its own CHANGELOG entry (newest first).
+
+## Overlap Quality Floor — Contributor (2026-06-28)
+
+|| Field | Value |
+||-------|--------|
+|| **Agent / pass** | Overlap Quality Floor / Agent 1 |
+|| **Agent brief** | `agent work/improvments/2 Overlap-Quality-Floor/Agent1-Overlap-Floor-Contributor.md` |
+|| **Status** | `shipped` |
+|| **Depends on** | Scoring Engine / Agent 1 (SCORE_WEIGHTS, scorePlan, compute() returning score) |
+|| **Unblocks** | — (single pass for this folder) |
+
+### Goal (one sentence)
+Register front and side overlap quality as score contributors so overlap below documented recommended floors lowers the robustness estimate with a specific decompositional reason, while the binary physics gate remains untouched.
+
+### Changed
+- **App / engine:** `prod/aerodeck-planner.html` — added `OVERLAP_MIN` (front rec 75%/low 60%, side rec 65%/low 50%) with convention note; registered `overlap-front:15` and `overlap-side:12` in `SCORE_WEIGHTS` with one-line rationales; added pure `overlapPenalty(overlap, cfg, weight)` for linear ramp (0 at/above rec, full weight at/below low); compute() now builds front+side `{id,label,penalty,reason}` contributions from live state and passes them to `scorePlan` (was `[]`). Gate derivation and return fields byte-identical. **22567 bytes** (`wc -c`).
+
+### Behavior / contract delta
+- Low front or side overlap now produces a penalty, lowers `estPct`, and emits a short reason (e.g. "front overlap 65% below recommended 75%"); at/above recommended that axis contributes nothing.
+- Side overlap participates in `compute()` scoring for the first time (previously display-only).
+- `score.active` becomes true precisely when a contribution exists, so the existing two-layer verdict UI renders band/Est./reasons for low-overlap in-spec plans.
+- Gate unchanged: `frontOverlapFail`, `blurFail`, `inSpec`, and binding logic are computed before any scoring and are unaffected by overlap quality. A 50/50 plan under ceiling remains IN SPEC; the score layer supplies the quality signal.
+- No new DOM, no id changes, no slider clamping, no reads or writes of gate booleans from score path.
+
+### Verify
+- Commands run: node harness exercising `overlapPenalty` + `scorePlan` across above-rec / mid-ramp / at-low / below-low / mixed / 50-50 cases (correct 0 / partial / max penalties, correct reasons, active=true iff penalty>0); gate-identity simulation (low overlap alone never sets inSpec=false); `wc -c` (22567); id count 35 / div count 14 (unchanged); `grep -n parentElement` (exactly the prior two `.parentElement` lines, untouched); no new elements or id attributes.
+- Result: `pass`
+
+### Deferred
+- Terrain-Weighting and Sensor-Orientation contributors (their folders)
+- Any future recalibration of the numeric weights or the 75/65 recommended floors (explicitly conventions)
+
+### Pitfalls / do not redo
+- Never touch `frontOverlapFail` / `blurFail` / `inSpec` / `binding` from overlap scoring code.
+- Emit a reason only for the axis that actually incurred a penalty.
+- The upper capture ceiling (gate) and lower quality floor (score) are distinct layers; do not conflate them.
+- Preserve the existing `.parentElement` binding targets exactly.
+
+### Next agent should
+1. Read `agent work/improvments/2 Overlap-Quality-Floor/Agent0-Overview.md` and `../1 Scoring-Engine/Scoring-Spec.md` before touching overlap or score logic.
+2. Terrain-Weighting may now follow the same contributor pattern (add weight + produce contributions in compute).
+3. Ceiling-Violation-Visibility can reuse the already-shipped score layer.
+
 ## Scoring Engine — Verdict Rendering (2026-06-28)
 
 || Field | Value |

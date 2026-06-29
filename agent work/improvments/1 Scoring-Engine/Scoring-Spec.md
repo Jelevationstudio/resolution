@@ -181,3 +181,36 @@ Dormancy prevents a misleading static percentage from appearing before real cont
 - `SCORE_WEIGHTS` present with rationale comments and explicit contributor pickup markers.
 - `compute()` returns a `score` object; dormant `active:false` when no contributors.
 - Gate booleans unchanged; no UI/DOM changes in this pass.
+
+---
+
+## 12. Score Band Color Mapping (Rendering Contract)
+
+The secondary score band label color is graded by band value. This mapping is part of the official rendering contract and is the system-of-record for any work that styles or extends the verdict band (including Ceiling-Violation-Visibility).
+
+| Band     | Token                  | Rationale |
+|----------|------------------------|-----------|
+| Strong   | `--color-in-spec`      | Good robustness; reuses the established "in spec" green. |
+| Adequate | `--color-binding`      | Marginal; the binding/attention orange signals "pay attention". |
+| Weak     | `--color-out-of-spec`  | Poor robustness; the failure red makes the quality problem visible at a glance. |
+
+**Rules:**
+- Implementation uses only the named tokens above. No raw hex literals for band color.
+- The color is driven from the live `score.band` string (e.g. via `[data-band="Weak"]` attribute selector or equivalent class on the band element).
+- The gate layer is always the visual headline: larger typography on `#verdict-state`, its `in-spec`/`out-of-spec` classes, and the `#verdict:has(...)` background/border. The band is rendered in a subordinate flex line below the gate with `font-weight: var(--fw-semibold)` and smaller clamp sizing.
+- When the score layer is suppressed (dormant or gate-fail), no band color is shown.
+- This prevents the false-reassurance case where a Weak plan would otherwise render its label in reassuring green.
+
+This section supersedes any prior hard-coded token on the band element.
+
+---
+
+## 13. Acceptance for Band Color Grading (Agent 3)
+
+- Band color follows the table in §12 using only existing `--color-*` tokens.
+- Strong = in-spec green, Adequate = binding orange, Weak = out-of-spec red.
+- No raw hex introduced.
+- Gate remains headline; band is secondary.
+- `Scoring-Spec.md` now contains the mapping as the rendering contract.
+- Existing ids, `.parentElement` binding chain, one-viewport layout, and token discipline preserved.
+- `wc -c` recorded and CHANGELOG entry added as Scoring Engine / Agent 3.
