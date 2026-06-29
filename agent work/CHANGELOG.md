@@ -6,6 +6,50 @@ Cross-session handoff log. Newest entry first. Append one entry per completed pa
 
 <!-- New entries go directly below this line, newest first. -->
 
+## Scoring Engine — Framework and Spec (2026-06-28)
+
+| Field | Value |
+|-------|--------|
+| **Agent / pass** | Scoring Engine / Agent 1 |
+| **Agent brief** | `agent work/improvments/1 Scoring-Engine/Agent1-Framework-and-Spec.md` |
+| **Status** | `shipped` |
+| **Depends on** | Agent 0 locked decisions (two-layer model, dormant, cap<100, non-guarantee) |
+| **Unblocks** | Agent 2 (Verdict Rendering); Overlap-Quality-Floor, Terrain-Weighting, Sensor-Orientation contributors |
+
+### Goal (one sentence)
+Author Scoring-Spec.md (system-of-record superseding Architecture §4/§8) and implement the dormant pure-JS scoring framework in `prod/aerodeck-planner.html`.
+
+### Changed
+- **Agent Work:** `agent work/improvments/1 Scoring-Engine/Scoring-Spec.md` — two-layer model, estimated-success semantics, sub-100 cap, bands/thresholds, gate-fail suppression, contributor interface `{id,label,penalty,reason}`, decomposition rule, `SCORE_WEIGHTS` convention.
+- **App / engine:** `prod/aerodeck-planner.html` — added `MAX_EST_PCT`, `MIN_EST_PCT`, `SCORE_BANDS`, `SCORE_WEIGHTS` (with pickup markers), pure `scorePlan(contributions)`, wired `score: scorePlan([])` into `compute()` return alongside unchanged gate result. **19587 bytes** (`wc -c`).
+
+### Behavior / contract delta
+- `compute()` now returns existing gate fields (`frontOverlapFail`, `blurFail`, `inSpec`, `binding`, ...) plus `score: { estPct, band, reasons, active }`.
+- Dormant state (zero contributors): `active:false`, `estPct:95`, band "Strong"; clean input never ≥100% (structural cap).
+- Gate booleans and derivation unchanged; score is independent additive layer.
+- No UI/DOM added; `score.active===false` keeps verdict visually identical until contributors register.
+- Contributor pickup comments present for overlap-floor / terrain / orientation.
+
+### Verify
+- Commands run: `node` VM round-trips on synthetic contributions (empty → 95/Strong/active:false; penalties sum+floor+band+reasons+active); full `compute()` gate identity check (inSpec, front/blurFail identical before/after); `wc -c`; id/div counts (30 ids, 12 divs); grep for score UI DOM (0 matches); `.parentElement` binding chain intact.
+- Result: `pass`
+
+### Deferred
+- Real contributors (overlap floor, terrain weighting, orientation) — **their folders** — **Overlap-Quality-Floor / Terrain-Weighting / Sensor-Orientation**
+- Score layer rendering (band + Est. % + reasons + hidden-when-dormant + gate-fail suppression) — **Agent 2**
+
+### Pitfalls / do not redo
+- Do not merge layers: score must not read `inSpec`/`frontOverlapFail`/`blurFail`.
+- Do not add any DOM or repaint changes — Agent 2 only.
+- Do not remove the dormant guard (`active:false` hides the score layer).
+- `SCORE_WEIGHTS` stays the single home for influence constants; rationale comments required.
+
+### Next agent should
+1. Open `Agent Work/improvments/1 Scoring-Engine/Agent2-Verdict-Rendering.md` and `Scoring-Spec.md`.
+2. In `repaint()`, consume `compute().score`; render band + `Est. ≈%` + compact reasons only when `active`; suppress est% on gate fail; keep gate headline.
+3. Ensure zero-contributor build is visually byte-for-behavior identical to today.
+4. Record wc -c and append CHANGELOG.
+
 ## Brand Restyle — Apply the Skin (2026-06-28)
 
 | Field | Value |

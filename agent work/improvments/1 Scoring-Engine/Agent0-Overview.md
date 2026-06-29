@@ -53,3 +53,8 @@ Build order across folders: **Scoring-Engine → Overlap-Quality-Floor + Terrain
 
 ## Logging
 Append one entry per completed pass to [`../../CHANGELOG.md`](../../CHANGELOG.md) using the README template. Newest first.
+
+## Folder naming (read for cross-folder links)
+The improvements folders are now build-order prefixed:
+`1 Scoring-Engine`, `2 Overlap-Quality-Floor`, `3 Terrain-Weighting`, `4 Ceiling-Violation-Visibility`, `5 Sensor-Orientation`.
+Any brief that links `../Scoring-Engine/...` means `../1 Scoring-Engine/...` (and likewise for the others) — resolve cross-folder links to the prefixed names.

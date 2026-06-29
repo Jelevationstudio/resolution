@@ -37,3 +37,8 @@ Agent 1: Overlap-floor contributor — thresholds, front + side penalties, side 
 Single pass (pure logic; the Scoring-Engine UI renders the result generically). Depends on the Scoring-Engine framework (Agent 1) shipped.
 
 Logging: append to [`../../CHANGELOG.md`](../../CHANGELOG.md), newest first.
+
+## Folder naming (read for cross-folder links)
+The improvements folders are now build-order prefixed:
+`1 Scoring-Engine`, `2 Overlap-Quality-Floor`, `3 Terrain-Weighting`, `4 Ceiling-Violation-Visibility`, `5 Sensor-Orientation`.
+Any brief that links `../Scoring-Engine/...` means `../1 Scoring-Engine/...` (and likewise for the others) — resolve cross-folder links to the prefixed names.

@@ -36,3 +36,8 @@ Agent 1: Orientation toggle — landscape/portrait selects the along-track axis 
 Single pass. Semi-independent — buildable without the Scoring-Engine; it only corrects footprint/ceiling math and adds no score contribution.
 
 Logging: append to [`../../CHANGELOG.md`](../../CHANGELOG.md), newest first.
+
+## Folder naming (read for cross-folder links)
+The improvements folders are now build-order prefixed:
+`1 Scoring-Engine`, `2 Overlap-Quality-Floor`, `3 Terrain-Weighting`, `4 Ceiling-Violation-Visibility`, `5 Sensor-Orientation`.
+Any brief that links `../Scoring-Engine/...` means `../1 Scoring-Engine/...` (and likewise for the others) — resolve cross-folder links to the prefixed names.

@@ -251,6 +251,22 @@ const MAX_BLUR_PX = 1;
 const AXIS_GSD_MIN = 0.5;
 const AXIS_GSD_MAX = 10;
 
+const MAX_EST_PCT = 95;
+const MIN_EST_PCT = 20;
+
+const SCORE_BANDS = [
+  { band: 'Strong',   min: 80 },
+  { band: 'Adequate', min: 60 },
+  { band: 'Weak',     min: 0  }
+];
+
+const SCORE_WEIGHTS = {
+  // === SCORE CONTRIBUTORS — registered by improvments/* folders ===
+  // CONTRIBUTOR[overlap-floor]: Overlap-Quality-Floor folder
+  // CONTRIBUTOR[terrain]:       Terrain-Weighting folder
+  // CONTRIBUTOR[orientation]:   Sensor-Orientation folder (if it scores)
+};
+
 function gsd(altitudeM, sensor) {
   return sensor.pixelPitchUm * altitudeM / (sensor.focalLengthMm * 10);
 }
@@ -277,6 +293,21 @@ function maxSpeedForFrontOverlap(targetFrontOverlap, alongTrackFootprintM, captu
 
 function blurCeiling(gsdCmPx, shutterS, maxBlurPx) {
   return maxBlurPx * (gsdCmPx / 100) / shutterS;
+}
+
+function scorePlan(contributions) {
+  const totalPenalty = contributions.reduce((sum, c) => sum + (c.penalty || 0), 0);
+  const estPct = Math.max(MIN_EST_PCT, MAX_EST_PCT - totalPenalty);
+  let band = SCORE_BANDS[SCORE_BANDS.length - 1].band;
+  for (const b of SCORE_BANDS) {
+    if (estPct >= b.min) { band = b.band; break; }
+  }
+  return {
+    estPct,
+    band,
+    reasons: contributions.map(c => c.reason).filter(Boolean),
+    active: contributions.length > 0
+  };
 }
 
 const state = {
@@ -379,7 +410,8 @@ function compute() {
   return {
     sensor, gsdCmPx, altitudeM, overlapCeilingRaw, overlapCeilingDisplay,
     blurMaxSpeed, blurPx, blurMarginPx, blurSpeedHeadroom,
-    frontOverlapFail, blurFail, inSpec, binding
+    frontOverlapFail, blurFail, inSpec, binding,
+    score: scorePlan([]) // dormant: no contributors registered; active:false
   };
 }
 
