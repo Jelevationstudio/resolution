@@ -6,6 +6,50 @@ Cross-session handoff log. Newest entry first. Append one entry per completed pa
 
 <!-- New entries go directly below this line, newest first. -->
 
+## Terrain Weighting — Contributor (2026-06-28)
+
+|| Field | Value |
+|||-------|--------|
+||| **Agent / pass** | Terrain Weighting / Agent 1 |
+||| **Agent brief** | `agent work/improvments/3 Terrain-Weighting/Agent1-Terrain-Contributor.md` |
+||| **Status** | `shipped` |
+||| **Depends on** | Scoring Engine / Agent 1 (framework + SCORE_WEIGHTS + scorePlan + compute returning score) |
+||| **Unblocks** | — (single pass for this folder) |
+
+### Goal (one sentence)
+Add a categorical terrain-type selector (4 options, non-linear weights) and register a terrain robustness contributor whose penalty is the selected weight under static AGL and suppressed (~0) under dynamic AGL, without touching the physics gate.
+
+### Changed
+- **App / engine:** `prod/aerodeck-planner.html` — added `TERRAIN_TYPES` (flat 0, gentle 6, hilly 18, mountainous 42) with one-line rationales; inserted `<select id="terrain-type">` in `#flags` (populated like `#light`, keeps `#terrain-dynamic` + `#terrain-note`); added `state.terrainType` (default 'flat'), read in `readInputs()`, `el.terrainType.onchange = repaint`; in `compute()`: `terrainPen = terrainDynamic ? 0 : TERRAIN_TYPES[...].weight`, emit `{id:'terrain', label, penalty, reason}` only when >0 with decompositional reason naming "static AGL over X terrain — flat-ground assumption likely violated"; updated SCORE_WEIGHTS comment to mark terrain contributor. **24190 bytes** (`wc -c`).
+- No changes to gate derivation, `inSpec`, `frontOverlapFail`, `blurFail`, binding logic, or any `.parentElement` targets.
+
+### Behavior / contract delta
+- Static AGL + non-flat terrain now deducts from `estPct` (gentle -6, hilly -18, mountainous -42) and emits a specific reason; flat adds 0 (no contribution).
+- Dynamic AGL suppresses terrain penalty to 0 for all types (no terrain contribution emitted); the existing terrain note still reflects the mode.
+- `score.active` becomes true (when any contributor present) and the two-layer UI shows band/Est./reasons including terrain when in-spec.
+- A mountainous static plan can drive est% into Weak on its own (95-42=53). Non-linear escalation (0/6/18/42).
+- Gate unchanged: terrain never participates in `frontOverlapFail`/`blurFail`/`inSpec`; a high-relief static plan remains IN SPEC if speed/overlap are physically feasible, but carries a low robustness estimate.
+- New DOM id "terrain-type"; all prior ids and the two `.parentElement` binding calls preserved exactly. Select inherits existing brand select styling + 44px min-height.
+
+### Verify
+- Commands run: node harness exercising TERRAIN_TYPES + scorePlan for all 8 (static/dynamic × 4 types) combos (correct penalties 0/6/18/42, non-linear, dynamic always 0, reasons only on static non-flat); full compute-path simulation (gate identity across terrain choices; terrain alone never flips inSpec; est% and reasons correct); `wc -c` (24190); id count 36 (+1 expected); `grep -n parentElement` (exactly the prior 2 lines, untouched); `grep -c 'id="terrain-type"'` (1); `grep -c 'id="terrain-dynamic"'` (1) and terrain-note (1); manual inspection of flags order and repaint wiring.
+- Result: `pass`
+
+### Deferred
+- Any future weight tuning — explicit conventions, not physics.
+- Sensor-Orientation contributor (its folder).
+
+### Pitfalls / do not redo
+- Never read or write `frontOverlapFail` / `blurFail` / `inSpec` from terrain code.
+- Only emit terrain contribution when penalty > 0 (dynamic and flat-static produce none, consistent with overlap-floor pattern).
+- Preserve the exact existing ids and the `.parentElement` chain for binding highlights.
+- Terrain is score-only; the dynamic checkbox + note remain the mode declaration (no terrain math).
+
+### Next agent should
+1. Read `agent work/improvments/3 Terrain-Weighting/Agent0-Overview.md` + `../1 Scoring-Engine/Scoring-Spec.md` before any terrain or score changes.
+2. Ceiling-Violation-Visibility can now assume terrain contributor is live.
+3. Append its own CHANGELOG entry (newest first) if further work touches this.
+
 ## Scoring Engine — Band Color Grading (2026-06-28)
 
 | Field | Value |

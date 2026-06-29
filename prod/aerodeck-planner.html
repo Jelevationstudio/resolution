@@ -213,6 +213,9 @@ input[type=range]::-moz-range-thumb{
   <label>Light
     <select id="light"></select>
   </label>
+  <label>Terrain
+    <select id="terrain-type"></select>
+  </label>
   <label><input type="checkbox" id="terrain-dynamic"> Dynamic AGL</label>
   <span id="terrain-note"></span>
 </div>
@@ -261,6 +264,13 @@ const LIGHT = {
   lowAngle: { label: 'Low angle', shutterS: 1 / 400 }
 };
 
+const TERRAIN_TYPES = {
+  flat:        { label: 'Flat / desert',       weight: 0  }, // negligible relief; flat-ground assumption holds
+  gentle:      { label: 'Gentle / rolling',    weight: 6  }, // minor, noticeable issues under static AGL
+  hilly:       { label: 'Hilly / variable',    weight: 18 }, // moderate relief; static AGL increasingly optimistic
+  mountainous: { label: 'Mountainous / steep', weight: 42 } // heavily/dominantly weighted; hundreds of ft uncompensated vertical possible; jump from hilly is large
+};
+
 const MAX_BLUR_PX = 1;
 const AXIS_GSD_MIN = 0.5;
 const AXIS_GSD_MAX = 10;
@@ -286,7 +296,7 @@ const SCORE_WEIGHTS = {
   // CONTRIBUTOR[overlap-floor]: Overlap-Quality-Floor folder
   'overlap-front': 15, // front overlap below recommended reduces reconstruction margin along flight direction
   'overlap-side':  12, // side overlap below recommended reduces cross-track coverage robustness
-  // CONTRIBUTOR[terrain]:       Terrain-Weighting folder
+  // CONTRIBUTOR[terrain]:       Terrain-Weighting folder (categorical weights in TERRAIN_TYPES; applied only for static AGL)
   // CONTRIBUTOR[orientation]:   Sensor-Orientation folder (if it scores)
 };
 
@@ -348,7 +358,8 @@ const state = {
   frontOverlap: 0.8,
   sideOverlap: 0.7,
   lightKey: 'overcast',
-  terrainDynamic: false
+  terrainDynamic: false,
+  terrainType: 'flat'
 };
 
 const el = {
@@ -378,6 +389,7 @@ const el = {
   bindingNote: document.getElementById('binding-note'),
   sensor: document.getElementById('sensor'),
   light: document.getElementById('light'),
+  terrainType: document.getElementById('terrain-type'),
   terrainDynamic: document.getElementById('terrain-dynamic'),
   terrainNote: document.getElementById('terrain-note')
 };
@@ -407,6 +419,7 @@ function bindAxisSlider() {
 function readInputs() {
   state.sensorKey = el.sensor.value;
   state.lightKey = el.light.value;
+  state.terrainType = el.terrainType.value;
   state.terrainDynamic = el.terrainDynamic.checked;
   state.speedMs = +el.speed.value;
   state.frontOverlap = +el.frontOverlap.value / 100;
@@ -456,6 +469,15 @@ function compute() {
     label: 'Side overlap',
     penalty: sidePen,
     reason: 'side overlap ' + pct(state.sideOverlap) + ' below recommended ' + pct(OVERLAP_MIN.side.recommended)
+  });
+
+  const terrainCfg = TERRAIN_TYPES[state.terrainType];
+  const terrainPen = state.terrainDynamic ? 0 : terrainCfg.weight;
+  if (terrainPen > 0) contributions.push({
+    id: 'terrain',
+    label: 'Terrain',
+    penalty: terrainPen,
+    reason: 'static AGL over ' + terrainCfg.label.toLowerCase() + ' terrain — flat-ground assumption likely violated'
   });
 
   return {
@@ -555,6 +577,13 @@ function initFlags() {
     el.light.appendChild(o);
   }
   el.light.value = state.lightKey;
+  for (const key in TERRAIN_TYPES) {
+    const o = document.createElement('option');
+    o.value = key;
+    o.textContent = TERRAIN_TYPES[key].label;
+    el.terrainType.appendChild(o);
+  }
+  el.terrainType.value = state.terrainType;
 }
 
 bindAxisSlider();
@@ -565,6 +594,7 @@ el.frontOverlap.oninput = repaint;
 el.sideOverlap.oninput = repaint;
 el.sensor.onchange = function () { bindAxisSlider(); repaint(); };
 el.light.onchange = repaint;
+el.terrainType.onchange = repaint;
 el.terrainDynamic.onchange = repaint;
 document.querySelectorAll('input[name="pinEnd"]').forEach(function (r) {
   r.onchange = onPinToggle;
