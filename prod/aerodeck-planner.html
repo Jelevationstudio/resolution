@@ -122,6 +122,7 @@ input[type=range]::-moz-range-thumb{
   box-shadow:inset 0 0 0 2px var(--color-binding),var(--shadow-subtle);
   background:var(--color-binding-bg)!important;
 }
+.out-of-spec-value{color:var(--color-out-of-spec)!important}
 #derived{
   font-size:clamp(.6875rem,2.2dvh,.8125rem);color:var(--color-ink-muted);
   padding:clamp(var(--space-1),1.2dvh,var(--space-2)) clamp(var(--space-2),2vw,var(--space-3));
@@ -536,15 +537,34 @@ function repaint() {
     el.verdictReasons.hidden = true;
   }
 
+  el.frontOverlapOut.classList.remove('out-of-spec-value');
+  el.frontOverlapCeiling.classList.remove('out-of-spec-value');
+  el.speedOut.classList.remove('out-of-spec-value');
+
   setBindingHighlight(el.frontOverlapCeilingWrap, r.binding === 'capture' || r.binding === 'both');
   setBindingHighlight(el.frontOverlapRow, r.binding === 'capture' || r.binding === 'both');
   setBindingHighlight(el.speed.parentElement, r.binding === 'blur' || r.binding === 'both');
   setBindingHighlight(el.blurMargin.parentElement, r.binding === 'blur' || r.binding === 'both');
 
-  if (r.binding === 'capture') el.bindingNote.textContent = 'Binding constraint: capture rate (front overlap target exceeds ceiling)';
-  else if (r.binding === 'blur') el.bindingNote.textContent = 'Binding constraint: blur ceiling (speed exceeds limit for light/shutter floor)';
-  else if (r.binding === 'both') el.bindingNote.textContent = 'Binding constraints: capture rate and blur ceiling';
-  else el.bindingNote.textContent = '';
+  const captureFail = r.binding === 'capture' || r.binding === 'both';
+  const blurFail = r.binding === 'blur' || r.binding === 'both';
+  if (captureFail) {
+    el.frontOverlapOut.classList.add('out-of-spec-value');
+    el.frontOverlapCeiling.classList.add('out-of-spec-value');
+  }
+  if (blurFail) {
+    el.speedOut.classList.add('out-of-spec-value');
+  }
+
+  if (r.binding === 'capture') {
+    el.bindingNote.textContent = 'Front overlap ' + pct(state.frontOverlap) + ' exceeds ceiling ' + pct(r.overlapCeilingDisplay) + ' at this speed — unachievable. Lower front overlap or raise altitude';
+  } else if (r.binding === 'blur') {
+    el.bindingNote.textContent = 'Speed ' + state.speedMs.toFixed(1) + ' m/s exceeds blur ceiling ' + r.blurMaxSpeed.toFixed(1) + ' m/s — unachievable. Lower speed or raise altitude';
+  } else if (r.binding === 'both') {
+    el.bindingNote.textContent = 'Front overlap ' + pct(state.frontOverlap) + ' exceeds ceiling; speed ' + state.speedMs.toFixed(1) + ' m/s exceeds blur ceiling ' + r.blurMaxSpeed.toFixed(1) + ' m/s — unachievable. Lower front overlap or speed or raise altitude';
+  } else {
+    el.bindingNote.textContent = '';
+  }
 
   el.terrainNote.textContent = state.terrainDynamic
     ? 'Terrain: dynamic AGL'

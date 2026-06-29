@@ -6,7 +6,83 @@ Cross-session handoff log. Newest entry first. Append one entry per completed pa
 
 <!-- New entries go directly below this line, newest first. -->
 
-## Terrain Weighting — Contributor (2026-06-28)
+## Ceiling Violation Visibility — microcopy polish (2026-06-28)
+
+|| Field | Value |
+||-------|--------|
+|| **Agent / pass** | Ceiling Violation Visibility / follow-up |
+|| **Agent brief** | follow-up to `.../Agent1-Gate-Fail-Visibility.md` |
+|| **Status** | `shipped` |
+
+### Goal (one sentence)
+Capitalize the remedy sentence after the em-dash period ("Lower...") for a more finished reading; use the browser MCP + narrow 390px viewport + temp force hook to visually glance the both-case message wrap behavior on a phone-like screen (while simulating gate-fail score suppression).
+
+### Changed
+- **App / engine:** `prod/aerodeck-planner.html` — three string literals in `repaint()`: `". .. unachievable. lower ..."` → `". .. unachievable. Lower ..."`. No other diffs; `wc -c` unchanged at 25168.
+- Used temp instrumentation (later reverted) + cursor-ide-browser (navigate to localhost-served copy, resize 390×780, search for text spans, multiple screenshots) to observe real rendering.
+
+### Behavior / contract delta
+- Microcopy now reads ".... unachievable. Lower front overlap..." (title-case after period).
+- On 390 px width (representative phone): the both-case message wrapped across two lines (y-span ≈34 px from first line start to last words; ~12 px font). Fits comfortably in the #derived area once the score layer is suppressed (as it is on gate-fail). Terrain/flags area remained well clear (note ended ~ y513, terrain note at y651). No scroll introduced; one-viewport holds.
+
+### Verify
+- Commands: source grep for the three "Lower" strings; `wc -c` (25168); browser MCP flow (tabs, navigate http://localhost-served, resize, lock, snapshot, bounding boxes, mouse/ key attempts, search for message fragments at different y, take_screenshot ×N, clean revert + reload + search for temp text = none); ReadLints clean.
+- Result: `pass`
+
+### Deferred / notes
+- If future device testing shows 3-line wrap or crowding, the both message could be further compacted (e.g. omit repeated "exceeds" or use shorter numbers), but current 2-line result + freed vertical from hidden score satisfies the no-scroll rule per the brief.
+
+### Pitfalls / do not redo
+- Keep the three messages in sync for casing.
+- Any shortening must still name the specific offender value + gap + the two-remedy hint.
+- Always revert test hooks; never leave forced state in the committed file.
+
+### Next agent should
+1. When doing real-device or additional viewport checks, prefer the same localhost-serve + browser MCP + search-for-text + y-position technique (or copy screenshots out of /tmp for permanence if needed).
+2. Read the prior Agent1 entry + Scoring-Spec before touching verdict microcopy again.
+
+|| Field | Value |
+||-------|--------|
+|| **Agent / pass** | Ceiling Violation Visibility / Agent 1 |
+|| **Agent brief** | `agent work/improvments/4 Ceiling-Violation-Visibility/Agent1-Gate-Fail-Visibility.md` |
+|| **Status** | `shipped` |
+|| **Depends on** | Scoring Engine / Agent 2 (two-layer verdict rendering this extends) |
+|| **Unblocks** | — (single pass; final improvements folder) |
+
+### Goal (one sentence)
+Make an over-ceiling front-overlap violation (and blur gate-fail) impossible to miss at a glance by marking the specific offending value(s) and emitting an explicit gap + one-line remedy in the existing binding note — without clamping the slider and without forking a second verdict treatment.
+
+### Changed
+- **App / engine:** `prod/aerodeck-planner.html` — added `.out-of-spec-value` CSS rule (uses `--color-out-of-spec` token); in `repaint()`: reset+apply the class to the actual numeric outputs that are offenders (`frontOverlapOut`, `frontOverlapCeiling` for capture fail; `speedOut` for blur fail); replaced the generic binding-note strings with explicit gap messages that name the chosen value and its ceiling (e.g. "Front overlap 85% exceeds ceiling 78% — unachievable. lower front overlap or raise altitude") plus the one-line fix hint; blur receives parallel treatment ("Speed X m/s exceeds blur ceiling Y m/s..."); kept all prior `setBindingHighlight` calls and the two `.parentElement` targets byte-identical. **25168 bytes** (`wc -c`).
+- No changes to slider attributes (`min/max/step` on front-overlap or speed), `inSpec`/`frontOverlapFail`/`blurFail` derivation, `compute()` return shape, verdict DOM, or score layer.
+
+### Behavior / contract delta
+- When front overlap exceeds its capture ceiling: the front-overlap chosen value and the ceiling readout render in `--color-out-of-spec` red (in addition to the existing `.binding` orange outline on their row/wrap); `#binding-note` now names the exact gap with numbers and appends the remedy line.
+- When speed exceeds blur ceiling: the speed output is marked out-of-spec red; binding note names the speed vs. its blur ceiling and suggests remedy.
+- On 'both': both sets of offenders are marked; note names both gaps compactly.
+- Gate remains headline (OUT OF SPEC in red banner); score layer suppressed on gate-fail per prior contract.
+- Slider stays free (no clamping, no auto-correct); value above ceiling is retained and now unmissably signaled.
+- No new ids, no new elements, no layout size change; one viewport preserved.
+
+### Verify
+- Commands run: `wc -c prod/aerodeck-planner.html` (25168); `grep -o 'id="[^"]*"' | wc -l` (36, unchanged); `grep -c '<div'` (14, unchanged); `grep -n parentElement` (exactly the prior two lines, untouched); `grep -c 'out-of-spec-value'` (1 in CSS + 4 uses in script); inspected front-overlap slider attrs (`min="50" max="95" step="1"`) untouched; message construction spot-checked for capture/blur/both cases (numbers interpolated, no clamping code paths); ReadLints clean; visual structure review (no new #verdict children, binding highlights still wired, classes toggled only on offender outputs).
+- Result: `pass`
+
+### Deferred
+- Any future wording tweaks to the gap/fix strings if they wrap more than desired on very small viewports.
+- Sensor-Orientation folder (its own pass).
+
+### Pitfalls / do not redo
+- Never clamp, block, or rewrite the slider `value` / `min`/`max`; the decision was explicit (retain unachievable target so the coupling remains visible).
+- Do not add new verdict banners or fork the two-layer gate+score structure — extend the existing `#binding-note` and binding highlights only.
+- Preserve the exact existing ids and the `.parentElement` binding targets (front row uses direct elements; speed/blur use parentElement).
+- Gate-fail value coloring is additive to (not a replacement for) the `.binding` row treatment.
+- Use only brand tokens; no raw colors or new ids.
+
+### Next agent should
+1. Read `agent work/improvments/4 Ceiling-Violation-Visibility/Agent0-Overview.md` + `Agent1-Gate-Fail-Visibility.md` and `../1 Scoring-Engine/Scoring-Spec.md` §12 before any further verdict-area work.
+2. If wording or layout tuning is needed for the binding note on small screens, adjust only the textContent strings and/or CSS whitespace for `#binding-note`.
+3. Append its own CHANGELOG entry (newest first) if further work touches the prod file.
 
 || Field | Value |
 |||-------|--------|
